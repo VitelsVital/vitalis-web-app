@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <script>
+        const navigation =
+        performance.getEntriesByType("navigation")[0];
+
+        if (
+            navigation &&
+            navigation.type === "reload"
+        ) {
+            document.documentElement.classList.add(
+            "is-refreshing"
+            );
+        }
+    </script>
+    <title>Work — Vitalis Mulwa</title>
+
+    <meta name="description" content="Selected work by Vitalis Mulwa." />
+</head>
+
+<body data-barba="wrapper">
+    <main data-barba="container" data-barba-namespace="work">
+        <header class="section main-header work-header">
+            <div class="container">
+                <div class="row">
+                    <h1>Work by Vitalis Mulwa</h1>
+                </div>
+            </div>
+        </header>
+    </main>
+
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>

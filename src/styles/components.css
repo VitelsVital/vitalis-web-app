@@ -1,0 +1,222 @@
+/*---------------- Main Header ----------------*/
+.main-header {
+  padding-top: calc(var(--section-padding) * 2);
+  padding-bottom: var(--section-padding);
+}
+@media screen and (max-width: 479px) {
+  .main-header {
+    padding-top: calc(var(--section-padding) * 1.5);
+  }
+}
+
+/*---------------- Page Transition ----------------*/
+.transition-container {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  pointer-events: none;
+  display: none;
+  overflow: hidden;
+}
+
+.transition-screen-one,
+.transition-screen-two {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.transition-screen-one {
+  transform: translateY(100%);
+}
+
+.transition-screen-two {
+  transform: translateY(100%);
+}
+
+.fixed-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+}
+
+.texture {
+  width: 100%;
+  height: 100%;
+}
+
+.fixed-background.primary .texture {
+  background-image: url("/images/textures/texture-dark.jpg");
+  background-size: cover;
+  background-position: center;
+}
+
+.fixed-background.secondary .texture {
+  background-image: url("/images/textures/texture-red.jpg");
+  background-size: cover;
+  background-position: center;
+}
+
+/*---------------- Split Characters ----------------*/
+.anim-link {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-transform: uppercase;
+  font-family: Inter, sans-serif;
+  font-size: 0.9em;
+  color: var(--color-white);
+  background: var(--color-black);
+  border-radius: var(--border-radius);
+  padding: calc(var(--gap-padding) * 0.25) calc(var(--gap-padding) * 0.5);
+  cursor: pointer;
+}
+
+.anim-link-text-wrapper {
+  position: relative;
+  display: block;
+  height: 1em;
+  width: max-content;
+  overflow: hidden;
+}
+
+.anim-link-text {
+  display: block;
+  position: relative;
+  white-space: nowrap;
+  font-kerning: none;
+  height: 1em;
+  -webkit-text-rendering: optimizeSpeed;
+  text-rendering: optimizeSpeed;
+}
+
+.anim-link-text.pri {
+  position: relative;
+  z-index: 2;
+}
+
+.anim-link-text.sec {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+}
+
+.anim-link .single-word {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  height: 1em;
+}
+
+.anim-link .single-char {
+  position: relative;
+  display: inline-flex;
+  overflow: visible;
+  height: 1em;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+.anim-link .single-char-inner {
+  display: inline-block;
+  position: relative;
+  height: 1em;
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+.anim-link .anim-link-text.sec .single-char-inner {
+  color: var(--color-orange);
+}
+
+/*---------------- Hamburger ----------------*/
+
+.hamburger {
+  position: absolute;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 2.5em;
+  height: 2.5em;
+
+  right: calc(var(--gap-padding) * 0.5);
+  top: calc(var(--gap-padding) * 1.2);
+
+  margin-right: calc(var(--gap-padding) * 0.5);
+
+  background: var(--color-white);
+
+  border-radius: var(--border-radius);
+
+  pointer-events: all;
+  cursor: pointer;
+  overflow: hidden;
+  user-select: none;
+
+  z-index: 999;
+
+  will-change: transform, opacity;
+}
+
+.hamburger:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 4px;
+}
+
+/*---------------- Hamburger Lines ----------------*/
+
+.hamburger .line {
+  position: absolute;
+
+  height: 2px;
+
+  background: var(--color-dark);
+
+  border-radius: var(--border-radius);
+
+  opacity: 1;
+
+  transform: translateY(0) scaleX(1) rotate(0.001deg);
+
+  will-change: transform, width, opacity;
+}
+
+.hamburger .line.one {
+  width: 30%;
+
+  transform: translateY(-5.5px) scaleX(1) rotate(0.001deg);
+}
+
+.hamburger .line.two {
+  width: 50%;
+}
+
+.hamburger .line.three {
+  width: 30%;
+
+  transform: translateY(5.5px) scaleX(1) rotate(0.001deg);
+}
+
+/*---------------- Floating State ----------------*/
+
+.hamburger.is-floating {
+  position: fixed;
+
+  top: calc(var(--gap-padding) * 0.45);
+  right: calc(var(--gap-padding) * 0.5);
+
+  margin-right: calc(var(--gap-padding) * 0.5);
+
+  z-index: 1002;
+}
