@@ -1,16 +1,12 @@
 import barba from "@barba/core";
+import type Lenis from "lenis";
 
-import PageTransition
-    from "./components/transitions/page/PageTransition";
+import PageTransition from "./components/transitions/page/PageTransition";
 
+export function initBarba(lenis: Lenis): void {
+  const transition = new PageTransition();
 
-export function initBarba(): void {
-
-    const transition =
-        new PageTransition();
-
-
-    /*
+  /*
     |--------------------------------------------------------------------------
     | Active navigation
     |--------------------------------------------------------------------------
@@ -26,43 +22,26 @@ export function initBarba(): void {
     |
     */
 
-    const updateActiveLinks = (): void => {
+  const updateActiveLinks = (): void => {
+    const currentPath = window.location.pathname.replace(/\/+$/, "") || "/";
 
-        const currentPath =
-            window.location.pathname
-                .replace(/\/+$/, "") || "/";
+    const links = document.querySelectorAll<HTMLAnchorElement>(
+      "a[data-link-status]",
+    );
 
+    links.forEach((link) => {
+      const linkPath =
+        new URL(link.href, window.location.origin).pathname.replace(
+          /\/+$/,
+          "",
+        ) || "/";
 
-        const links =
-            document.querySelectorAll<HTMLAnchorElement>(
-                "a[data-link-status]"
-            );
+      link.dataset.linkStatus =
+        linkPath === currentPath ? "active" : "not-active";
+    });
+  };
 
-
-        links.forEach(
-            (link) => {
-
-                const linkPath =
-                    new URL(
-                        link.href,
-                        window.location.origin
-                    )
-                    .pathname
-                    .replace(/\/+$/, "") || "/";
-
-
-                link.dataset.linkStatus =
-                    linkPath === currentPath
-                        ? "active"
-                        : "not-active";
-
-            }
-        );
-
-    };
-
-
-    /*
+  /*
     |--------------------------------------------------------------------------
     | Current transition
     |--------------------------------------------------------------------------
@@ -72,68 +51,53 @@ export function initBarba(): void {
     |
     */
 
-    let transitionRun:
-        ReturnType<PageTransition["play"]> | null = null;
+  let transitionRun: ReturnType<PageTransition["play"]> | null = null;
 
-
-    /*
+  /*
     |--------------------------------------------------------------------------
     | Refresh detection
     |--------------------------------------------------------------------------
     */
 
-    const navigationEntry =
-        performance.getEntriesByType(
-            "navigation"
-        )[0] as PerformanceNavigationTiming | undefined;
+  const navigationEntry = performance.getEntriesByType("navigation")[0] as
+    PerformanceNavigationTiming | undefined;
 
+  const isReload = navigationEntry?.type === "reload";
 
-    const isReload =
-        navigationEntry?.type === "reload";
+  if (isReload) {
+    requestAnimationFrame(() => {
+      const currentTransition = transition.play();
 
+      currentTransition.contentReady.then(() => {
+        document.documentElement.classList.remove("is-refreshing");
 
-    if (isReload) {
+        /*
+         * Reset Lenis after refresh transition
+         * reaches the point where content is ready.
+         */
 
-        requestAnimationFrame(
-            () => {
+        lenis.scrollTo(0, {
+          immediate: true,
+        });
 
-                const currentTransition =
-                    transition.play();
+        /*
+         * Refresh active navigation state.
+         */
 
+        updateActiveLinks();
+      });
+    });
+  }
 
-                currentTransition.contentReady.then(
-                    () => {
-
-                        document.documentElement.classList.remove(
-                            "is-refreshing"
-                        );
-
-
-                        /*
-                         * Refresh active navigation state.
-                         */
-
-                        updateActiveLinks();
-
-                    }
-                );
-
-            }
-        );
-
-    }
-
-
-    /*
+  /*
     |--------------------------------------------------------------------------
     | Initial active navigation state
     |--------------------------------------------------------------------------
     */
 
-    updateActiveLinks();
+  updateActiveLinks();
 
-
-    /*
+  /*
     |--------------------------------------------------------------------------
     | Start transition on pointer down
     |--------------------------------------------------------------------------
@@ -143,89 +107,56 @@ export function initBarba(): void {
     |
     */
 
-    document.addEventListener(
-        "pointerdown",
-        (event: PointerEvent) => {
+  document.addEventListener(
+    "pointerdown",
+    (event: PointerEvent) => {
+      /*
+       * Only primary mouse button.
+       */
 
-            /*
-             * Only primary mouse button.
-             */
+      if (event.pointerType === "mouse" && event.button !== 0) {
+        return;
+      }
 
-            if (
-                event.pointerType === "mouse" &&
-                event.button !== 0
-            ) {
-                return;
-            }
+      const target = event.target as HTMLElement;
 
+      const link = target.closest("a") as HTMLAnchorElement | null;
 
-            const target =
-                event.target as HTMLElement;
+      if (!link) {
+        return;
+      }
 
+      /*
+       * Internal links only.
+       */
 
-            const link =
-                target.closest(
-                    "a"
-                ) as HTMLAnchorElement | null;
+      if (link.origin !== window.location.origin) {
+        return;
+      }
 
+      /*
+       * Ignore special links.
+       */
 
-            if (!link) {
-                return;
-            }
+      if (link.target && link.target !== "_self") {
+        return;
+      }
 
+      if (link.hasAttribute("download")) {
+        return;
+      }
 
-            /*
-             * Internal links only.
-             */
-
-            if (
-                link.origin !==
-                window.location.origin
-            ) {
-                return;
-            }
-
-
-            /*
-             * Ignore special links.
-             */
-
-            if (
-                link.target &&
-                link.target !== "_self"
-            ) {
-                return;
-            }
-
-
-            if (
-                link.hasAttribute(
-                    "download"
-                )
-            ) {
-                return;
-            }
-
-
-            /*
+      /*
             |--------------------------------------------------------------------------
             | Current and destination URLs
             |--------------------------------------------------------------------------
             */
 
-            const current =
-                new URL(
-                    window.location.href
-                );
+      const current = new URL(window.location.href);
 
+      const destination = new URL(link.href);
 
-            const destination =
-                new URL(
-                    link.href
-                );
-
-
-            /*
+      /*
             |--------------------------------------------------------------------------
             | Same-page link
             |--------------------------------------------------------------------------
@@ -235,19 +166,13 @@ export function initBarba(): void {
             |
             */
 
-            if (
-                destination.href ===
-                current.href
-            ) {
+      if (destination.href === current.href) {
+        window.location.reload();
 
-                window.location.reload();
+        return;
+      }
 
-                return;
-
-            }
-
-
-            /*
+      /*
             |--------------------------------------------------------------------------
             | Different internal page
             |--------------------------------------------------------------------------
@@ -256,127 +181,127 @@ export function initBarba(): void {
             |
             */
 
-            transitionRun =
-                transition.play();
+      transitionRun = transition.play();
+    },
+    true,
+  );
 
-        },
-        true
-    );
-
-
-    /*
+  /*
     |--------------------------------------------------------------------------
     | Barba
     |--------------------------------------------------------------------------
     */
 
-    barba.init({
+  barba.init({
+    debug: true,
 
-        debug: true,
+    preventRunning: true,
 
-        preventRunning: true,
+    transitions: [
+      {
+        name: "page-transition",
 
-        transitions: [
-
-            {
-
-                name:
-                    "page-transition",
-
-
-                /*
+        /*
                 |--------------------------------------------------------------------------
                 | Leave
                 |--------------------------------------------------------------------------
                 */
 
-                async leave(data) {
+        async leave(data) {
+          console.log(
+            "[Barba] LEAVE:",
+            data.current.namespace,
+            "→",
+            data.next.namespace,
+          );
 
-                    console.log(
-                        "[Barba] LEAVE:",
-                        data.current.namespace,
-                        "→",
-                        data.next.namespace
-                    );
+          /*
+           * Normal internal link:
+           *
+           * pointerdown has already started
+           * the transition.
+           */
 
+          if (transitionRun) {
+            const currentTransition = transitionRun;
 
-                    /*
-                     * Normal internal link:
-                     *
-                     * pointerdown has already started
-                     * the transition.
-                     */
+            transitionRun = null;
 
-                    if (transitionRun) {
+            /*
+             * Allow Barba to continue when
+             * CONTENT_TIME is reached.
+             */
 
-                        const currentTransition =
-                            transitionRun;
+            await currentTransition.contentReady;
 
+            return;
+          }
 
-                        transitionRun =
-                            null;
+          /*
+           * Back / Forward:
+           *
+           * There was no pointerdown,
+           * so start the same transition here.
+           */
 
+          const currentTransition = transition.play();
 
-                        /*
-                         * Allow Barba to continue when
-                         * CONTENT_TIME is reached.
-                         */
+          /*
+           * Release the new content at
+           * CONTENT_TIME.
+           */
 
-                        await currentTransition.contentReady;
+          await currentTransition.contentReady;
+        },
 
-                        return;
-
-                    }
-
-
-                    /*
-                     * Back / Forward:
-                     *
-                     * There was no pointerdown,
-                     * so start the same transition here.
-                     */
-
-                    const currentTransition =
-                        transition.play();
-
-
-                    /*
-                     * Release the new content at
-                     * CONTENT_TIME.
-                     */
-
-                    await currentTransition.contentReady;
-
-                },
-
-
-                /*
+        /*
                 |--------------------------------------------------------------------------
                 | Enter
                 |--------------------------------------------------------------------------
                 */
 
-                async enter(data) {
+        async enter(data) {
+          console.log("[Barba] ENTER:", data.next.namespace);
 
-    console.log(
-        "[Barba] ENTER:",
-        data.next.namespace
-    );
+          /*
+           * Update active navigation state
+           * after the new page has entered.
+           */
 
+          updateActiveLinks();
+        },
 
-    /*
-     * Update active navigation state
-     * after the new page has entered.
-     */
+        /*
+                |--------------------------------------------------------------------------
+                | After Enter
+                |--------------------------------------------------------------------------
+                |
+                | The new page is now active.
+                | Reset both the browser scroll position
+                | and Lenis.
+                |
+                */
 
-    updateActiveLinks();
+        async afterEnter() {
+          /*
+           * Reset native browser scroll.
+           */
 
-},
+          window.scrollTo(0, 0);
 
-            },
+          /*
+           * Reset Lenis immediately.
+           *
+           * "immediate: true" prevents Lenis from
+           * smoothly animating from the old page's
+           * position to the top.
+           */
 
-        ],
-
-    });
-
+          lenis.scrollTo(0, {
+            immediate: true,
+          });
+        },
+      },
+    ],
+  });
 }

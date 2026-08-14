@@ -5,7 +5,44 @@ import "./styles/components.css";
 
 import Navigation from "./components/navigation/Navigation";
 import { initBarba } from "./barba";
+import { initLenis } from "./lenis";
 
+/*
+|--------------------------------------------------------------------------
+| Browser Scroll Restoration
+|--------------------------------------------------------------------------
+|
+| Prevent the browser from restoring the previous scroll position
+| when the page is refreshed or navigated with Back / Forward.
+|
+*/
+
+if ("scrollRestoration" in history) {
+  history.scrollRestoration = "manual";
+}
+
+/*
+|--------------------------------------------------------------------------
+| Initial Scroll Position
+|--------------------------------------------------------------------------
+|
+| Always start the application from the top.
+|
+*/
+
+window.scrollTo(0, 0);
+
+/*
+|--------------------------------------------------------------------------
+| Lenis
+|--------------------------------------------------------------------------
+|
+| Initialize Lenis once and keep the same instance throughout
+| the lifetime of the application.
+|
+*/
+
+const lenis = initLenis();
 
 /*
 |--------------------------------------------------------------------------
@@ -13,13 +50,9 @@ import { initBarba } from "./barba";
 |--------------------------------------------------------------------------
 */
 
-const navigation =
-    new Navigation();
+const navigation = new Navigation();
 
-document.body.prepend(
-    navigation.render()
-);
-
+document.body.prepend(navigation.render());
 
 /*
 |--------------------------------------------------------------------------
@@ -27,19 +60,11 @@ document.body.prepend(
 |--------------------------------------------------------------------------
 */
 
-const app =
-    document.querySelector<HTMLElement>(
-        '[data-barba="container"]'
-    );
+const app = document.querySelector<HTMLElement>('[data-barba="container"]');
 
 if (!app) {
-
-    throw new Error(
-        '[data-barba="container"] element not found.'
-    );
-
+  throw new Error('[data-barba="container"] element not found.');
 }
-
 
 /*
 |--------------------------------------------------------------------------
@@ -47,4 +72,4 @@ if (!app) {
 |--------------------------------------------------------------------------
 */
 
-initBarba();
+initBarba(lenis);
