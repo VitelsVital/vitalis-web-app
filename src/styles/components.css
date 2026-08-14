@@ -62,8 +62,28 @@
   font-family: Druk-Bold-Trial;
   font-size: calc(var(--space-size) * 2.5);
   line-height: 1;
+  text-align: center;
   color: var(--color-gray);
   font-variant-numeric: tabular-nums;
+}
+.loading-screen-counter {
+  position: absolute;
+
+  top: calc(50% + 0.7em);
+
+  left: 50%;
+
+  width: 100%;
+
+  margin: 0;
+
+  text-align: center;
+
+  font-variant-numeric: tabular-nums;
+
+  line-height: 1;
+
+  will-change: transform;
 }
 
 /*
