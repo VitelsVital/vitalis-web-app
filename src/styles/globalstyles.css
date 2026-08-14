@@ -34,11 +34,11 @@ html.is-refreshing [data-barba="container"] {
 /*---------------- Colors ----------------*/
 :root {
   --color-dark: #050505;
-  --color-gray: #424346;
+  --color-gray: #1c1d20;
   --color-white: #ede8e5;
   --color-blue: #004fff;
   --color-red: #f04a00;
-  --color-orange: #ffc917;
+  --color-orange: #ffe100;
   --color-darkgreen: #008a49;
   --color-darkred: #bd2018;
 

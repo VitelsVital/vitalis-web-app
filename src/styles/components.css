@@ -30,7 +30,7 @@
   left: 0;
   width: 100%;
   height: 2.5px;
-  background: var(--color-blue);
+  background: var(--color-white);
   transform-origin: left center;
   transform: scaleX(0);
 }
@@ -38,18 +38,18 @@
 .loading-screen-name {
   position: relative;
   font-family: Druk-Bold-Trial;
-  font-size: calc(var(--space-size) * 1.5);
+  font-size: calc(var(--space-size) * 1);
   font-weight: 700;
   line-height: 1;
   /* letter-spacing: 0.4em; */
-  color: rgba(255, 255, 255, 0.12);
+  color: var(--color-gray);
   white-space: nowrap;
 }
 
 .loading-screen-name-bright {
   position: absolute;
   inset: 0;
-  color: #fff;
+  color: var(--color-white);
   clip-path: inset(0 100% 0 0);
   pointer-events: none;
 }
@@ -62,7 +62,7 @@
   font-family: Druk-Bold-Trial;
   font-size: calc(var(--space-size) * 2.5);
   line-height: 1;
-  color: #fff;
+  color: var(--color-gray);
   font-variant-numeric: tabular-nums;
 }
 
