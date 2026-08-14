@@ -3,12 +3,10 @@ import type Lenis from "lenis";
 
 import PageTransition from "./components/transitions/page/PageTransition";
 
-export function initBarba(lenis: Lenis): void {
-  const transition = new PageTransition();
-
+export function initBarba(lenis: Lenis, transition: PageTransition): void {
   /*
     |--------------------------------------------------------------------------
-    | Active navigation
+    | Active Navigation
     |--------------------------------------------------------------------------
     |
     | Updates every navigation link that uses
@@ -43,11 +41,12 @@ export function initBarba(lenis: Lenis): void {
 
   /*
     |--------------------------------------------------------------------------
-    | Current transition
+    | Current Transition
     |--------------------------------------------------------------------------
     |
-    | Stores the currently running transition so Barba does not
-    | start a second transition during normal link navigation.
+    | Stores the currently running transition so Barba
+    | does not start another transition during normal
+    | pointer-based navigation.
     |
     */
 
@@ -55,7 +54,7 @@ export function initBarba(lenis: Lenis): void {
 
   /*
     |--------------------------------------------------------------------------
-    | Refresh detection
+    | Refresh Detection
     |--------------------------------------------------------------------------
     */
 
@@ -64,34 +63,29 @@ export function initBarba(lenis: Lenis): void {
 
   const isReload = navigationEntry?.type === "reload";
 
+  /*
+    |--------------------------------------------------------------------------
+    | Refresh Transition
+    |--------------------------------------------------------------------------
+    |
+    | On refresh, the loader in main.ts reaches 100% and
+    | starts PageTransition directly.
+    |
+    | Therefore we DO NOT start another transition here.
+    |
+    */
+
   if (isReload) {
     requestAnimationFrame(() => {
-      const currentTransition = transition.play();
+      document.documentElement.classList.remove("is-refreshing");
 
-      currentTransition.contentReady.then(() => {
-        document.documentElement.classList.remove("is-refreshing");
-
-        /*
-         * Reset Lenis after refresh transition
-         * reaches the point where content is ready.
-         */
-
-        lenis.scrollTo(0, {
-          immediate: true,
-        });
-
-        /*
-         * Refresh active navigation state.
-         */
-
-        updateActiveLinks();
-      });
+      updateActiveLinks();
     });
   }
 
   /*
     |--------------------------------------------------------------------------
-    | Initial active navigation state
+    | Initial Active Navigation State
     |--------------------------------------------------------------------------
     */
 
@@ -99,7 +93,7 @@ export function initBarba(lenis: Lenis): void {
 
   /*
     |--------------------------------------------------------------------------
-    | Start transition on pointer down
+    | Start Transition On Pointer Down
     |--------------------------------------------------------------------------
     |
     | This starts the transition immediately when an internal
@@ -148,7 +142,7 @@ export function initBarba(lenis: Lenis): void {
 
       /*
             |--------------------------------------------------------------------------
-            | Current and destination URLs
+            | Current And Destination URLs
             |--------------------------------------------------------------------------
             */
 
@@ -158,7 +152,7 @@ export function initBarba(lenis: Lenis): void {
 
       /*
             |--------------------------------------------------------------------------
-            | Same-page link
+            | Same Page Link
             |--------------------------------------------------------------------------
             |
             | Clicking a link pointing to the current page
@@ -174,7 +168,7 @@ export function initBarba(lenis: Lenis): void {
 
       /*
             |--------------------------------------------------------------------------
-            | Different internal page
+            | Different Internal Page
             |--------------------------------------------------------------------------
             |
             | Start the transition immediately.
@@ -216,11 +210,14 @@ export function initBarba(lenis: Lenis): void {
           );
 
           /*
-           * Normal internal link:
-           *
-           * pointerdown has already started
-           * the transition.
-           */
+                    |--------------------------------------------------------------------------
+                    | Normal Internal Link
+                    |--------------------------------------------------------------------------
+                    |
+                    | pointerdown has already started
+                    | the PageTransition.
+                    |
+                    */
 
           if (transitionRun) {
             const currentTransition = transitionRun;
@@ -238,17 +235,20 @@ export function initBarba(lenis: Lenis): void {
           }
 
           /*
-           * Back / Forward:
-           *
-           * There was no pointerdown,
-           * so start the same transition here.
-           */
+                    |--------------------------------------------------------------------------
+                    | Back / Forward
+                    |--------------------------------------------------------------------------
+                    |
+                    | There was no pointerdown event.
+                    |
+                    | Start the same transition here.
+                    |
+                    */
 
           const currentTransition = transition.play();
 
           /*
-           * Release the new content at
-           * CONTENT_TIME.
+           * Release new content at CONTENT_TIME.
            */
 
           await currentTransition.contentReady;
@@ -277,8 +277,8 @@ export function initBarba(lenis: Lenis): void {
                 |--------------------------------------------------------------------------
                 |
                 | The new page is now active.
-                | Reset both the browser scroll position
-                | and Lenis.
+                |
+                | Reset the browser and Lenis scroll position.
                 |
                 */
 
@@ -292,9 +292,8 @@ export function initBarba(lenis: Lenis): void {
           /*
            * Reset Lenis immediately.
            *
-           * "immediate: true" prevents Lenis from
-           * smoothly animating from the old page's
-           * position to the top.
+           * Do NOT use a smooth scroll here.
+           * The new page should start at exactly 0.
            */
 
           lenis.scrollTo(0, {

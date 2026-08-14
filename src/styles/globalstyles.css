@@ -1,54 +1,56 @@
-html.is-refreshing
-[data-barba="container"] {
+html.is-refreshing [data-barba="container"] {
   visibility: hidden;
 }
 
-
 /*---------------- Fonts ----------------*/
 @font-face {
-  font-family: 'Inter';
-  src:  url('..//assets/fonts/inter-tight-cyrillic-300-normal.woff2') format('woff2'), 
-        url('../assets/fonts/inter-tight-cyrillic-300-normal.ttf') format('ttf');
+  font-family: "Inter";
+  src:
+    url("..//assets/fonts/inter-tight-cyrillic-300-normal.woff2")
+      format("woff2"),
+    url("../assets/fonts/inter-tight-cyrillic-300-normal.ttf") format("ttf");
   font-style: normal;
   font-display: swap;
 }
 @font-face {
-   font-family: 'Druk-Bold-Trial';
-   src:  url('..//assets/fonts/Druk-Bold-Trial.woff2') format('woff2'), 
-         url('..//assets/fonts/Druk-Bold-Trial.ttf') format('ttf');
-   font-weight: 600;
-   font-style: normal;
-   font-display: swap;
+  font-family: "Druk-Bold-Trial";
+  src:
+    url("..//assets/fonts/Druk-Bold-Trial.woff2") format("woff2"),
+    url("..//assets/fonts/Druk-Bold-Trial.ttf") format("ttf");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
 }
 @font-face {
-   font-family: 'Grand Mighty';
-   src:  url('..//assets/fonts/Grand\ Mighty.woff2') format('woff2'), 
-         url('..//assets/fonts/Grand\ Mighty.ttf') format('ttf');
-   font-weight: 600;
-   font-style: normal;
-   font-display: swap;
+  font-family: "Grand Mighty";
+  src:
+    url("..//assets/fonts/Grand\ Mighty.woff2") format("woff2"),
+    url("..//assets/fonts/Grand\ Mighty.ttf") format("ttf");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
 }
 
 /*---------------- Colors ----------------*/
 :root {
   --color-dark: #050505;
   --color-gray: #424346;
-  --color-white: #EDE8E5;
-  --color-blue: #2454FF;
-  --color-red: #F04A00;
+  --color-white: #ede8e5;
+  --color-blue: #004fff;
+  --color-red: #f04a00;
   --color-orange: #ffc917;
-  --color-darkgreen: #008A49;
-  --color-darkred: #BD2018;
+  --color-darkgreen: #008a49;
+  --color-darkred: #bd2018;
 
   --color-alert-error: var(--color-darkred);
   --color-alert-success: var(--color-darkgreen);
-  
-  --border: .5em solid var(--color-white);
+
+  --border: 0.5em solid var(--color-white);
 }
 
 /*---------------- Animations ----------------*/
-:root{
-  --animation-primary: 0.5s cubic-bezier(.6, 0, .1, 1);
+:root {
+  --animation-primary: 0.5s cubic-bezier(0.6, 0, 0.1, 1);
 }
 
 /*---------------- Sizes ----------------*/
@@ -65,7 +67,9 @@ html.is-refreshing
 @media screen and (max-width: 720px) {
   :root {
     --section-padding: 12vh;
-    --container-padding: calc(calc(var(--gap-padding) * .5) + calc(var(--gap-padding) * .5))
+    --container-padding: calc(
+      calc(var(--gap-padding) * 0.5) + calc(var(--gap-padding) * 0.5)
+    );
   }
 }
 @media screen and (max-width: 540px) {
@@ -79,19 +83,29 @@ html.is-refreshing
 }
 
 /*---------------- Hide SCrollbar ----------------*/
-body::-webkit-scrollbar {display: none;}
-body {-ms-overflow-style: none;} 
-html {scrollbar-width: none;}
+body::-webkit-scrollbar {
+  display: none;
+}
+body {
+  -ms-overflow-style: none;
+}
+html {
+  scrollbar-width: none;
+}
 
 /*---------------- Body ----------------*/
-*, *:after, *:before {
+*,
+*:after,
+*:before {
   -webkit-box-sizing: border-box;
   -moz-box-sizing: border-box;
   box-sizing: border-box;
 }
 
-li, ul, figure {
-  padding: 0; 
+li,
+ul,
+figure {
+  padding: 0;
   margin: 0;
   list-style: none;
 }
@@ -100,7 +114,8 @@ html {
   scroll-behavior: initial;
 }
 
-html, body {
+html,
+body {
   height: 100%;
   background-color: var(--color-gray);
 }
@@ -127,7 +142,11 @@ html, body {
 }
 
 /*---------------- General ----------------*/
-canvas, img, video, picture, figure {
+canvas,
+img,
+video,
+picture,
+figure {
   max-width: 100%;
   height: auto;
   box-sizing: border-box;
@@ -142,8 +161,8 @@ canvas, img, video, picture, figure {
 }
 
 .icon {
-  width: calc(var(--space-size) * .9143);
-  height: calc(var(--space-size) * .9143);
+  width: calc(var(--space-size) * 0.9143);
+  height: calc(var(--space-size) * 0.9143);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -155,12 +174,33 @@ svg {
   box-sizing: border-box;
 }
 
-audio, canvas, iframe, img, svg, video, picture, figure {
+audio,
+canvas,
+iframe,
+img,
+svg,
+video,
+picture,
+figure {
   vertical-align: middle;
 }
 
 /*---------------- Typography ----------------*/
-h1, h2, h3, h4, h5, h6, p, a, li, ul, ol, span, strong, em, figcaption {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+a,
+li,
+ul,
+ol,
+span,
+strong,
+em,
+figcaption {
   padding: 0;
   margin: 0;
   font-style: normal;
@@ -168,40 +208,41 @@ h1, h2, h3, h4, h5, h6, p, a, li, ul, ol, span, strong, em, figcaption {
   color: var(--color-white);
 }
 
-h1, h2 {
-  font-family: 'Inter', sans-serif;
+h1,
+h2 {
+  font-family: "Inter", sans-serif;
   font-size: calc(var(--space-size) * 1);
   font-weight: 700;
   text-transform: none;
 }
 
 h3 {
-  font-family: 'Inter', sans-serif;
-  font-size: calc(var(--space-size) * .56);
+  font-family: "Inter", sans-serif;
+  font-size: calc(var(--space-size) * 0.56);
   color: var(--color-white);
   text-transform: none;
 }
 
 h4 {
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   font-weight: 600;
-  font-size: calc(var(--space-size) * .32);
+  font-size: calc(var(--space-size) * 0.32);
   color: var(--color-white);
 }
 
 h5 {
-  font-family: 'Inter', sans-serif;
-  font-size: calc(var(--space-size) * .24);
+  font-family: "Inter", sans-serif;
+  font-size: calc(var(--space-size) * 0.24);
   font-weight: 600;
   font-style: normal;
   color: var(--color-white);
   margin-bottom: 1em;
   text-transform: uppercase;
-  opacity: .5;
+  opacity: 0.5;
 }
 
 p {
-  font-family: 'Inter', sans-serif;
+  font-family: "Inter", sans-serif;
   font-weight: 400;
   font-style: normal;
   font-size: 0.96em;
@@ -220,7 +261,7 @@ em {
 a {
   color: unset;
   text-decoration: none;
-  cursor:pointer
+  cursor: pointer;
 }
 
 /*---------------- Buttons ----------------*/

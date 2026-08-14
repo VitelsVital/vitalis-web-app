@@ -5,13 +5,14 @@ import gsap from "gsap";
 | Loading Screen
 |--------------------------------------------------------------------------
 |
-| Controls:
+| Responsibilities:
 |
-| - Top progress line
-| - Center name reveal
-| - Percentage counter
-|
-| All three are driven by the same GSAP progress value.
+| - Display the loading screen
+| - Animate the top progress line
+| - Reveal VITALIS MULWA from left → right
+| - Animate the percentage counter
+| - Resolve play() exactly at 100%
+| - Remove itself only after PageTransition has taken over
 |
 */
 
@@ -26,6 +27,12 @@ export default class LoadingScreen {
 
   private readonly counter: HTMLDivElement;
 
+  /*
+    |--------------------------------------------------------------------------
+    | Constructor
+    |--------------------------------------------------------------------------
+    */
+
   constructor() {
     /*
         |--------------------------------------------------------------------------
@@ -39,39 +46,35 @@ export default class LoadingScreen {
 
     /*
         |--------------------------------------------------------------------------
-        | Progress line
+        | Progress Line
         |--------------------------------------------------------------------------
         */
 
     this.progressLine = document.createElement("div");
 
-    this.progressLine.className = "loading-screen__line";
+    this.progressLine.className = "loading-screen-line";
 
     /*
         |--------------------------------------------------------------------------
-        | Name wrapper
+        | Name
         |--------------------------------------------------------------------------
         */
 
     this.name = document.createElement("div");
 
-    this.name.className = "loading-screen__name";
+    this.name.className = "loading-screen-name";
 
     this.name.textContent = "VITALIS MULWA";
 
     /*
         |--------------------------------------------------------------------------
-        | Bright name
+        | Bright Name
         |--------------------------------------------------------------------------
-        |
-        | This sits directly on top of the dim name.
-        | Its clip-path reveals from left → right.
-        |
         */
 
     this.nameBright = document.createElement("div");
 
-    this.nameBright.className = "loading-screen__name-bright";
+    this.nameBright.className = "loading-screen-name-bright";
 
     this.nameBright.textContent = "VITALIS MULWA";
 
@@ -85,9 +88,9 @@ export default class LoadingScreen {
 
     this.counter = document.createElement("div");
 
-    this.counter.className = "loading-screen__counter";
+    this.counter.className = "loading-screen-counter";
 
-    this.counter.textContent = "0%";
+    this.counter.textContent = "0"; // Removed %
 
     /*
         |--------------------------------------------------------------------------
@@ -112,13 +115,18 @@ export default class LoadingScreen {
     |--------------------------------------------------------------------------
     | Play
     |--------------------------------------------------------------------------
+    |
+    | Resolves EXACTLY when progress reaches 100%.
+    |
+    | It does not hide or remove the loader.
+    |
     */
 
   play(): Promise<void> {
     return new Promise((resolve) => {
       /*
                 |--------------------------------------------------------------------------
-                | Initial state
+                | Initial State
                 |--------------------------------------------------------------------------
                 */
 
@@ -137,7 +145,7 @@ export default class LoadingScreen {
 
       /*
                 |--------------------------------------------------------------------------
-                | Progress object
+                | Shared Progress
                 |--------------------------------------------------------------------------
                 */
 
@@ -147,7 +155,7 @@ export default class LoadingScreen {
 
       /*
                 |--------------------------------------------------------------------------
-                | Main progress animation
+                | Progress Animation
                 |--------------------------------------------------------------------------
                 */
 
@@ -156,7 +164,13 @@ export default class LoadingScreen {
 
         duration: 2.4,
 
-        ease: "power2.inOut",
+        ease: "power3.inOut",
+
+        /*
+                        |--------------------------------------------------------------------------
+                        | Update
+                        |--------------------------------------------------------------------------
+                        */
 
         onUpdate: () => {
           const value = Math.round(progress.value);
@@ -165,10 +179,10 @@ export default class LoadingScreen {
            * Counter
            */
 
-          this.counter.textContent = `${value}%`;
+          this.counter.textContent = `${value}`; // Removed %
 
           /*
-           * Top line
+           * Top Line
            */
 
           gsap.set(this.progressLine, {
@@ -176,7 +190,7 @@ export default class LoadingScreen {
           });
 
           /*
-           * Name brightness
+           * Name
            */
 
           gsap.set(this.nameBright, {
@@ -184,13 +198,18 @@ export default class LoadingScreen {
           });
         },
 
+        /*
+                        |--------------------------------------------------------------------------
+                        | Complete
+                        |--------------------------------------------------------------------------
+                        */
+
         onComplete: () => {
           /*
-           * Make absolutely sure
-           * the final state is exact.
+           * Guarantee final state.
            */
 
-          this.counter.textContent = "100%";
+          this.counter.textContent = "100"; // Removed %
 
           gsap.set(this.progressLine, {
             scaleX: 1,
@@ -201,28 +220,31 @@ export default class LoadingScreen {
           });
 
           /*
-                             |--------------------------------------------------------------------------
-                             | Exit
-                             |--------------------------------------------------------------------------
-                             */
+           * IMPORTANT:
+           *
+           * The loader remains visible.
+           *
+           * main.ts will immediately start
+           * PageTransition.
+           *
+           */
 
-          gsap.to(this.container, {
-            autoAlpha: 0,
-
-            duration: 0.5,
-
-            ease: "power2.inOut",
-
-            delay: 0.15,
-
-            onComplete: () => {
-              this.container.remove();
-
-              resolve();
-            },
-          });
+          resolve();
         },
       });
     });
+  }
+
+  /*
+    |--------------------------------------------------------------------------
+    | Remove
+    |--------------------------------------------------------------------------
+    |
+    | Called ONLY after PageTransition has covered the loader.
+    |
+    */
+
+  remove(): void {
+    this.container.remove();
   }
 }
