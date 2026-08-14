@@ -12,15 +12,15 @@ class MobileMenu {
   private navigationLinks = [
     {
       text: "Work",
-      href: "/work/",
+      href: "/work",
     },
     {
       text: "About",
-      href: "/about/",
+      href: "/about",
     },
     {
       text: "Contact",
-      href: "/contact/",
+      href: "/contact",
     },
   ];
 
