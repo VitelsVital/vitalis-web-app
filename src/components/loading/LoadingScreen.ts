@@ -306,12 +306,12 @@ export default class LoadingScreen {
   transitionOut(): Promise<void> {
     return new Promise((resolve) => {
       gsap.to([this.name, this.counter], {
-        yPercent: -500,
-        duration: 0.2,
-        ease: "power3.in",
-        stagger: 0,
-        opacity: 0,
-        overwrite: true,
+        // yPercent: -400,
+        // duration: 0.4,
+        // ease: "power3.Out",
+        // stagger: 0,
+        // opacity: 0,
+        // overwrite: true,
 
         onComplete: resolve,
       });

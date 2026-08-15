@@ -188,7 +188,7 @@ const startApplication = async (): Promise<void> => {
   */
 
   await new Promise<void>((resolve) => {
-    window.setTimeout(resolve, 150);
+    window.setTimeout(resolve, 0);
   });
 
   /*

@@ -69,7 +69,7 @@
 .loading-screen-counter {
   width: max-content;
   font-family: Druk-Bold-Trial;
-  font-size: calc(var(--space-size) * 2.5);
+  font-size: calc(var(--space-size) * 3);
   line-height: 1;
   text-align: center;
   color: var(--color-gray);
@@ -77,42 +77,14 @@
   will-change: transform;
   font-variant-numeric: tabular-nums;
 }
-/* 
-
- */
-
-/* .loading-screen-counter {
-  position: absolute;
-  left: 50%;
-  bottom: 2rem;
-  transform: translateX(-50%);
-  font-family: Druk-Bold-Trial;
-  font-size: calc(var(--space-size) * 2.5);
-  line-height: 1;
-  text-align: center;
-  color: var(--color-gray);
-  font-variant-numeric: tabular-nums;
-} */
-
-/* .loading-screen-counter {
-  position: absolute;
-  top: calc(50% + 1.2em);
-  left: 50%;
-  width: 100%;
-  margin: 0;
-  text-align: center;
-  font-variant-numeric: tabular-nums;
-  line-height: 1;
-  will-change: transform;
-} */
 
 @media (max-width: 768px) {
   .loading-screen-name {
     font-size: 16vw;
   }
-  .loading-screen-counter {
+  /* .loading-screen-counter {
     top: calc(50% + 2em);
-  }
+  } */
 }
 
 /*---------------- Page Transition ----------------*/
