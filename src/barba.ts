@@ -1,116 +1,72 @@
 import barba from "@barba/core";
-import type Lenis from "lenis";
 
-import PageTransition from "./components/transitions/page/PageTransition";
+import TransitionManager from "./components/transitions/TransitionManager";
 
-export function initBarba(lenis: Lenis, transition: PageTransition): void {
+/*
+|--------------------------------------------------------------------------
+| Active Page Transition
+|--------------------------------------------------------------------------
+|
+| For normal pointer navigation, the transition starts BEFORE Barba
+| begins its lifecycle.
+|
+| Barba then consumes that already-running transition in leave().
+|
+| For Back / Forward navigation, there is no pointerdown event, so
+| leave() starts the normal navigation transition itself.
+|
+| IMPORTANT:
+|
+| Reload transitions are NOT stored here.
+|
+| A hard reload starts a completely new document and is handled
+| by main.ts through:
+|
+|   playPageTransition("reload")
+|
+*/
+
+let activePageTransition: {
+  contentReady: Promise<void>;
+  finished: Promise<void>;
+} | null = null;
+
+/*
+|--------------------------------------------------------------------------
+| Init Barba
+|--------------------------------------------------------------------------
+*/
+
+const initBarba = (transitionManager: TransitionManager): void => {
   /*
-    |--------------------------------------------------------------------------
-    | Active Navigation
-    |--------------------------------------------------------------------------
-    |
-    | Updates every navigation link that uses
-    | data-link-status.
-    |
-    | This includes:
-    |
-    | - Main navigation
-    | - Mobile navigation
-    | - Any future navigation links
-    |
-    */
-
-  const updateActiveLinks = (): void => {
-    const currentPath = window.location.pathname.replace(/\/+$/, "") || "/";
-
-    const links = document.querySelectorAll<HTMLAnchorElement>(
-      "a[data-link-status]",
-    );
-
-    links.forEach((link) => {
-      const linkPath =
-        new URL(link.href, window.location.origin).pathname.replace(
-          /\/+$/,
-          "",
-        ) || "/";
-
-      link.dataset.linkStatus =
-        linkPath === currentPath ? "active" : "not-active";
-    });
-  };
-
-  /*
-    |--------------------------------------------------------------------------
-    | Current Transition
-    |--------------------------------------------------------------------------
-    |
-    | Stores the currently running transition so Barba
-    | does not start another transition during normal
-    | pointer-based navigation.
-    |
-    */
-
-  let transitionRun: ReturnType<PageTransition["play"]> | null = null;
-
-  /*
-    |--------------------------------------------------------------------------
-    | Refresh Detection
-    |--------------------------------------------------------------------------
-    */
-
-  const navigationEntry = performance.getEntriesByType("navigation")[0] as
-    PerformanceNavigationTiming | undefined;
-
-  const isReload = navigationEntry?.type === "reload";
-
-  /*
-    |--------------------------------------------------------------------------
-    | Refresh Transition
-    |--------------------------------------------------------------------------
-    |
-    | On refresh, the loader in main.ts reaches 100% and
-    | starts PageTransition directly.
-    |
-    | Therefore we DO NOT start another transition here.
-    |
-    */
-
-  if (isReload) {
-    requestAnimationFrame(() => {
-      document.documentElement.classList.remove("is-refreshing");
-
-      updateActiveLinks();
-    });
-  }
-
-  /*
-    |--------------------------------------------------------------------------
-    | Initial Active Navigation State
-    |--------------------------------------------------------------------------
-    */
-
-  updateActiveLinks();
-
-  /*
-    |--------------------------------------------------------------------------
-    | Start Transition On Pointer Down
-    |--------------------------------------------------------------------------
-    |
-    | This starts the transition immediately when an internal
-    | link is pressed.
-    |
-    */
+  |--------------------------------------------------------------------------
+  | Start Transition On Pointer Down
+  |--------------------------------------------------------------------------
+  |
+  | This behavior comes from the working hosted version.
+  |
+  | The curtain begins moving BEFORE Barba starts replacing containers.
+  |
+  */
 
   document.addEventListener(
     "pointerdown",
     (event: PointerEvent) => {
       /*
-       * Only primary mouse button.
-       */
+      |--------------------------------------------------------------------------
+      | Only Primary Mouse Button
+      |--------------------------------------------------------------------------
+      */
 
       if (event.pointerType === "mouse" && event.button !== 0) {
         return;
       }
+
+      /*
+      |--------------------------------------------------------------------------
+      | Find Clicked Link
+      |--------------------------------------------------------------------------
+      */
 
       const target = event.target as HTMLElement;
 
@@ -121,16 +77,20 @@ export function initBarba(lenis: Lenis, transition: PageTransition): void {
       }
 
       /*
-       * Internal links only.
-       */
+      |--------------------------------------------------------------------------
+      | Internal Links Only
+      |--------------------------------------------------------------------------
+      */
 
       if (link.origin !== window.location.origin) {
         return;
       }
 
       /*
-       * Ignore special links.
-       */
+      |--------------------------------------------------------------------------
+      | Ignore Special Links
+      |--------------------------------------------------------------------------
+      */
 
       if (link.target && link.target !== "_self") {
         return;
@@ -141,24 +101,27 @@ export function initBarba(lenis: Lenis, transition: PageTransition): void {
       }
 
       /*
-            |--------------------------------------------------------------------------
-            | Current And Destination URLs
-            |--------------------------------------------------------------------------
-            */
+      |--------------------------------------------------------------------------
+      | Current / Destination URLs
+      |--------------------------------------------------------------------------
+      */
 
       const current = new URL(window.location.href);
 
       const destination = new URL(link.href);
 
       /*
-            |--------------------------------------------------------------------------
-            | Same Page Link
-            |--------------------------------------------------------------------------
-            |
-            | Clicking a link pointing to the current page
-            | behaves like a refresh.
-            |
-            */
+      |--------------------------------------------------------------------------
+      | Same Page
+      |--------------------------------------------------------------------------
+      |
+      | Same-page navigation is intentionally treated as a real reload.
+      |
+      | main.ts will detect the resulting page load and run:
+      |
+      |   playPageTransition("reload")
+      |
+      */
 
       if (destination.href === current.href) {
         window.location.reload();
@@ -167,27 +130,39 @@ export function initBarba(lenis: Lenis, transition: PageTransition): void {
       }
 
       /*
-            |--------------------------------------------------------------------------
-            | Different Internal Page
-            |--------------------------------------------------------------------------
-            |
-            | Start the transition immediately.
-            |
-            */
+      |--------------------------------------------------------------------------
+      | Different Internal Page
+      |--------------------------------------------------------------------------
+      |
+      | Start the NORMAL navigation transition immediately.
+      |
+      | Barba will consume this transition later in leave().
+      |
+      */
 
-      transitionRun = transition.play();
+      activePageTransition = transitionManager.playPageTransition();
     },
     true,
   );
 
   /*
-    |--------------------------------------------------------------------------
-    | Barba
-    |--------------------------------------------------------------------------
-    */
+  |--------------------------------------------------------------------------
+  | Barba
+  |--------------------------------------------------------------------------
+  */
 
   barba.init({
     debug: true,
+
+    /*
+    |--------------------------------------------------------------------------
+    | Prevent Running
+    |--------------------------------------------------------------------------
+    |
+    | Prevent another Barba transition from starting while one is
+    | already running.
+    |
+    */
 
     preventRunning: true,
 
@@ -196,10 +171,10 @@ export function initBarba(lenis: Lenis, transition: PageTransition): void {
         name: "page-transition",
 
         /*
-                |--------------------------------------------------------------------------
-                | Leave
-                |--------------------------------------------------------------------------
-                */
+        |--------------------------------------------------------------------------
+        | LEAVE
+        |--------------------------------------------------------------------------
+        */
 
         async leave(data) {
           console.log(
@@ -210,24 +185,37 @@ export function initBarba(lenis: Lenis, transition: PageTransition): void {
           );
 
           /*
-                    |--------------------------------------------------------------------------
-                    | Normal Internal Link
-                    |--------------------------------------------------------------------------
-                    |
-                    | pointerdown has already started
-                    | the PageTransition.
-                    |
-                    */
+          |--------------------------------------------------------------------------
+          | Existing Transition
+          |--------------------------------------------------------------------------
+          |
+          | Normal pointer navigation has already started the transition.
+          |
+          */
 
-          if (transitionRun) {
-            const currentTransition = transitionRun;
-
-            transitionRun = null;
+          if (activePageTransition) {
+            const currentTransition = activePageTransition;
 
             /*
-             * Allow Barba to continue when
-             * CONTENT_TIME is reached.
-             */
+            |--------------------------------------------------------------------------
+            | Consume Transition
+            |--------------------------------------------------------------------------
+            |
+            | Clear the reference immediately so it cannot accidentally
+            | be reused by another navigation.
+            |
+            */
+
+            activePageTransition = null;
+
+            /*
+            |--------------------------------------------------------------------------
+            | Wait Until Current Page Is Covered
+            |--------------------------------------------------------------------------
+            |
+            | Barba can now safely proceed with its container lifecycle.
+            |
+            */
 
             await currentTransition.contentReady;
 
@@ -235,72 +223,75 @@ export function initBarba(lenis: Lenis, transition: PageTransition): void {
           }
 
           /*
-                    |--------------------------------------------------------------------------
-                    | Back / Forward
-                    |--------------------------------------------------------------------------
-                    |
-                    | There was no pointerdown event.
-                    |
-                    | Start the same transition here.
-                    |
-                    */
+          |--------------------------------------------------------------------------
+          | Back / Forward
+          |--------------------------------------------------------------------------
+          |
+          | Browser history navigation does not generate our pointerdown
+          | event.
+          |
+          | Therefore start the NORMAL navigation transition here.
+          |
+          */
 
-          const currentTransition = transition.play();
+          const currentTransition = transitionManager.playPageTransition();
 
           /*
-           * Release new content at CONTENT_TIME.
-           */
+          |--------------------------------------------------------------------------
+          | No Active Pointer Transition
+          |--------------------------------------------------------------------------
+          */
+
+          activePageTransition = null;
+
+          /*
+          |--------------------------------------------------------------------------
+          | Wait Until Current Page Is Covered
+          |--------------------------------------------------------------------------
+          */
 
           await currentTransition.contentReady;
         },
 
         /*
-                |--------------------------------------------------------------------------
-                | Enter
-                |--------------------------------------------------------------------------
-                */
+        |--------------------------------------------------------------------------
+        | ENTER
+        |--------------------------------------------------------------------------
+        */
 
         async enter(data) {
           console.log("[Barba] ENTER:", data.next.namespace);
 
           /*
-           * Update active navigation state
-           * after the new page has entered.
-           */
-
-          updateActiveLinks();
+          |--------------------------------------------------------------------------
+          | IMPORTANT
+          |--------------------------------------------------------------------------
+          |
+          | Do NOT start another transition here.
+          |
+          | The transition is already running outside the Barba containers.
+          |
+          */
         },
 
         /*
-                |--------------------------------------------------------------------------
-                | After Enter
-                |--------------------------------------------------------------------------
-                |
-                | The new page is now active.
-                |
-                | Reset the browser and Lenis scroll position.
-                |
-                */
+        |--------------------------------------------------------------------------
+        | AFTER ENTER
+        |--------------------------------------------------------------------------
+        */
 
         async afterEnter() {
           /*
-           * Reset native browser scroll.
-           */
+          |--------------------------------------------------------------------------
+          | Reset Native Browser Scroll
+          |--------------------------------------------------------------------------
+          */
 
           window.scrollTo(0, 0);
-
-          /*
-           * Reset Lenis immediately.
-           *
-           * Do NOT use a smooth scroll here.
-           * The new page should start at exactly 0.
-           */
-
-          lenis.scrollTo(0, {
-            immediate: true,
-          });
         },
       },
     ],
   });
-}
+};
+
+export default initBarba;

@@ -1,0 +1,653 @@
+01. index.html
+        ↓
+02. main.ts
+        ↓
+03. Global CSS
+        ↓
+04. Fonts
+        ↓
+05. Navigation skeleton
+        ↓
+06. Barba
+        ↓
+07. Lenis
+        ↓
+08. PageTransition
+        ↓
+09. LoadingScreen
+        ↓
+10. Homepage sections
+        ↓
+11. Responsive behavior
+        ↓
+12. SEO / OG / performance
+
+<head></head>
+<body data-barba="wrapper">
+  <div class="loading-container"></div>
+  <nav class="navigation"></nav>
+  <main class="main touch" id="work" data-barba="container" data-barba-namespace="work"></main>
+  <main class="main touch" id="about" data-barba="container" data-barba-namespace="about"></main>
+</body>
+
+<!-- Current barba.ts -->
+ import barba from "@barba/core";
+import type Lenis from "lenis";
+
+import PageTransition from "./components/transitions/page/PageTransition";
+
+export function initBarba(lenis: Lenis, transition: PageTransition): void {
+  /*
+  |--------------------------------------------------------------------------
+  | Active Navigation
+  |--------------------------------------------------------------------------
+  */
+
+  const updateActiveLinks = (): void => {
+    const currentPath = window.location.pathname.replace(/\/+$/, "") || "/";
+
+    const links = document.querySelectorAll<HTMLAnchorElement>(
+      "a[data-link-status]",
+    );
+
+    links.forEach((link) => {
+      const linkPath =
+        new URL(link.href, window.location.origin).pathname.replace(
+          /\/+$/,
+          "",
+        ) || "/";
+
+      link.dataset.linkStatus =
+        linkPath === currentPath ? "active" : "not-active";
+    });
+  };
+
+  /*
+  |--------------------------------------------------------------------------
+  | Barba
+  |--------------------------------------------------------------------------
+  */
+
+  barba.init({
+    debug: true,
+
+    transitions: [
+      {
+        name: "page-transition",
+
+        /*
+        |--------------------------------------------------------------------------
+        | Leave
+        |--------------------------------------------------------------------------
+        |
+        | Every Barba navigation starts the same PageTransition.
+        |
+        | This covers:
+        |
+        | - Internal links
+        | - Browser Back
+        | - Browser Forward
+        |
+        */
+
+        async leave() {
+          const transitionRun = transition.play();
+
+          /*
+          |--------------------------------------------------------------------------
+          | Content Release
+          |--------------------------------------------------------------------------
+          |
+          | Barba is allowed to replace the current page
+          | when CONTENT_TIME is reached.
+          |
+          */
+
+          await transitionRun.contentReady;
+        },
+
+        /*
+        |--------------------------------------------------------------------------
+        | Enter
+        |--------------------------------------------------------------------------
+        */
+
+        async enter(data) {
+          updateActiveLinks();
+
+          console.log("[Barba] ENTER:", data.next.namespace);
+        },
+
+        /*
+        |--------------------------------------------------------------------------
+        | After Enter
+        |--------------------------------------------------------------------------
+        */
+
+        async afterEnter() {
+          /*
+          |--------------------------------------------------------------------------
+          | Reset Browser Scroll
+          |--------------------------------------------------------------------------
+          */
+
+          window.scrollTo(0, 0);
+
+          /*
+          |--------------------------------------------------------------------------
+          | Reset Lenis
+          |--------------------------------------------------------------------------
+          */
+
+          lenis.scrollTo(0, {
+            immediate: true,
+          });
+
+          /*
+          |--------------------------------------------------------------------------
+          | Update Navigation
+          |--------------------------------------------------------------------------
+          */
+
+          updateActiveLinks();
+        },
+      },
+    ],
+  });
+
+  /*
+  |--------------------------------------------------------------------------
+  | Initial Navigation State
+  |--------------------------------------------------------------------------
+  */
+
+  updateActiveLinks();
+}
+
+
+<!-- Current main.ts -->
+ import "./styles/normalize.css";
+import "./styles/globalstyles.css";
+import "./styles/styles.css";
+import "./styles/components.css";
+
+import Navigation from "./components/navigation/Navigation";
+import LoadingScreen from "./components/loading/LoadingScreen";
+import PageTransition from "./components/transitions/page/PageTransition";
+
+import { initBarba } from "./barba";
+import { initLenis } from "./lenis";
+
+/*
+|--------------------------------------------------------------------------
+| Browser Scroll Restoration
+|--------------------------------------------------------------------------
+|
+| Prevent the browser from restoring the previous scroll position
+| when refreshing or using Back / Forward navigation.
+|
+*/
+
+if ("scrollRestoration" in history) {
+  history.scrollRestoration = "manual";
+}
+
+/*
+|--------------------------------------------------------------------------
+| Initial Scroll Position
+|--------------------------------------------------------------------------
+|
+| Always start the application from the top.
+|
+*/
+
+window.scrollTo(0, 0);
+
+/*
+|--------------------------------------------------------------------------
+| Lenis
+|--------------------------------------------------------------------------
+|
+| Initialize Lenis once for the entire application.
+|
+*/
+
+const lenis = initLenis();
+
+/*
+|--------------------------------------------------------------------------
+| Navigation
+|--------------------------------------------------------------------------
+*/
+
+const navigation = new Navigation();
+
+document.body.prepend(navigation.render());
+
+/*
+|--------------------------------------------------------------------------
+| Page Transition
+|--------------------------------------------------------------------------
+|
+| One PageTransition instance is shared by the application.
+|
+*/
+
+const pageTransition = new PageTransition();
+
+/*
+|--------------------------------------------------------------------------
+| Current Page
+|--------------------------------------------------------------------------
+|
+| The Barba namespace tells us which page is currently loaded.
+|
+*/
+
+const app = document.querySelector<HTMLElement>('[data-barba="container"]');
+
+if (!app) {
+  throw new Error('[data-barba="container"] element not found.');
+}
+
+const currentPage = app.dataset.barbaNamespace;
+
+/*
+|--------------------------------------------------------------------------
+| Home Page Detection
+|--------------------------------------------------------------------------
+|
+| Only the Home page uses the LoadingScreen.
+|
+*/
+
+const isHomePage = currentPage === "home";
+
+/*
+|--------------------------------------------------------------------------
+| Loading Screen
+|--------------------------------------------------------------------------
+|
+| Create the LoadingScreen ONLY when the current page is Home.
+|
+| Other pages never create or render a loading screen.
+|
+*/
+
+let loading: LoadingScreen | null = null;
+
+if (isHomePage) {
+  loading = new LoadingScreen();
+
+  document.body.append(loading.render());
+
+  /*
+  |--------------------------------------------------------------------------
+  | Stop Lenis During Home Loading
+  |--------------------------------------------------------------------------
+  |
+  | The loading screen owns the viewport.
+  |
+  */
+
+  lenis.stop();
+}
+
+/*
+|--------------------------------------------------------------------------
+| Barba
+|--------------------------------------------------------------------------
+*/
+
+initBarba(lenis, pageTransition);
+
+/*
+|--------------------------------------------------------------------------
+| Application Bootstrap
+|--------------------------------------------------------------------------
+*/
+
+const startApplication = async (): Promise<void> => {
+  /*
+  |--------------------------------------------------------------------------
+  | HOME
+  |--------------------------------------------------------------------------
+  |
+  | Home:
+  |
+  | Loading
+  |   ↓
+  | Page Transition
+  |   ↓
+  | Home
+  |
+  */
+
+  if (isHomePage && loading) {
+    /*
+    |--------------------------------------------------------------------------
+    | 1. Loading
+    |--------------------------------------------------------------------------
+    */
+
+    await loading.play();
+
+    /*
+    |--------------------------------------------------------------------------
+    | 2. Completion Pause
+    |--------------------------------------------------------------------------
+    */
+
+    await new Promise<void>((resolve) => {
+      window.setTimeout(resolve, 380);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | 3. Loading Exit
+    |--------------------------------------------------------------------------
+    */
+
+    const loadingExit = loading.transitionOut();
+
+    /*
+    |--------------------------------------------------------------------------
+    | 4. Page Transition
+    |--------------------------------------------------------------------------
+    */
+
+    const transition = pageTransition.play();
+
+    /*
+    |--------------------------------------------------------------------------
+    | 5. Wait Until Transition Covers Loader
+    |--------------------------------------------------------------------------
+    */
+
+    await transition.contentReady;
+
+    /*
+    |--------------------------------------------------------------------------
+    | 6. Remove Loading Screen
+    |--------------------------------------------------------------------------
+    */
+
+    loading.remove();
+
+    /*
+    |--------------------------------------------------------------------------
+    | 7. Finish Loading Exit
+    |--------------------------------------------------------------------------
+    */
+
+    await loadingExit;
+
+    /*
+    |--------------------------------------------------------------------------
+    | 8. Finish Page Transition
+    |--------------------------------------------------------------------------
+    */
+
+    await transition.finished;
+
+    /*
+    |--------------------------------------------------------------------------
+    | 9. Reset Scroll
+    |--------------------------------------------------------------------------
+    */
+
+    window.scrollTo(0, 0);
+
+    lenis.scrollTo(0, {
+      immediate: true,
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | 10. Start Lenis
+    |--------------------------------------------------------------------------
+    */
+
+    lenis.start();
+
+    return;
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | OTHER PAGES
+  |--------------------------------------------------------------------------
+  |
+  | Work / About / Contact / Archive:
+  |
+  | Page Transition
+  |   ↓
+  | Page
+  |
+  */
+
+  const transition = pageTransition.play();
+
+  /*
+  |--------------------------------------------------------------------------
+  | Wait Until Transition Has Covered The Initial Page
+  |--------------------------------------------------------------------------
+  */
+
+  await transition.contentReady;
+
+  /*
+  |--------------------------------------------------------------------------
+  | Wait For Transition To Finish
+  |--------------------------------------------------------------------------
+  */
+
+  await transition.finished;
+
+  /*
+  |--------------------------------------------------------------------------
+  | Reset Scroll
+  |--------------------------------------------------------------------------
+  */
+
+  window.scrollTo(0, 0);
+
+  lenis.scrollTo(0, {
+    immediate: true,
+  });
+
+  /*
+  |--------------------------------------------------------------------------
+  | Start Lenis
+  |--------------------------------------------------------------------------
+  */
+
+  lenis.start();
+};
+
+/*
+|--------------------------------------------------------------------------
+| Start Application
+|--------------------------------------------------------------------------
+*/
+
+startApplication();
+
+
+
+<!-- Current index.html -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vitalis Mulwa — Creative Consultant & Digital Designer</title>
+    <meta name="description" content="Creative Consultant & Digital Designer" />
+  </head>
+
+  <body data-barba="wrapper">
+    <main data-barba="container" data-barba-namespace="home">
+      <header class="section main-header home-header">
+        <div class="container">
+          <div class="row">
+            <h1>I'm Vitalis Mulwa</h1>
+          </div>
+        </div>
+      </header>
+      <section class="section intro-home">
+        <div class="container">
+          <div class="row">
+            <p>01 — Introduction</p>
+
+            <h2>Creating bespoke webs that feel like Mansory Cars.</h2>
+
+            <p>
+              Strategic design, refined interfaces, and high-performance
+              development built around how your business needs to be perceived.
+            </p>
+          </div>
+        </div>
+      </section>
+      <section class="section services-home">
+        <div class="container">
+          <div class="row">
+            <p>02 — What I Do</p>
+
+            <h2>Design. Development. Brand.</h2>
+
+            <div class="services-list">
+              <article class="service">
+                <span>01</span>
+                <h3>Web Design</h3>
+                <p>
+                  High-end digital interfaces designed around clarity,
+                  positioning, and conversion.
+                </p>
+              </article>
+
+              <article class="service">
+                <span>02</span>
+                <h3>Web Development</h3>
+                <p>
+                  Fast, responsive, scalable websites engineered for real-world
+                  business requirements.
+                </p>
+              </article>
+
+              <article class="service">
+                <span>03</span>
+                <h3>Brand Identity</h3>
+                <p>
+                  Visual systems that make businesses look established,
+                  credible, and impossible to ignore.
+                </p>
+              </article>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section class="section statement-home">
+        <div class="container">
+          <div class="row">
+            <p>03 — Philosophy</p>
+
+            <h2>
+              Good design gets attention. Great design creates perception.
+            </h2>
+
+            <p>
+              Every interaction should have a reason. Every detail should
+              contribute to the experience.
+            </p>
+          </div>
+        </div>
+      </section>
+      <section class="section work-home">
+        <div class="container">
+          <div class="row">
+            <p>04 — Selected Work</p>
+
+            <h2>Selected Projects</h2>
+
+            <div class="work-grid">
+              <article class="work-item">
+                <span>01</span>
+                <h3>Project Alpha</h3>
+                <p>Brand Strategy / Web Design / Development</p>
+              </article>
+
+              <article class="work-item">
+                <span>02</span>
+                <h3>Project Beta</h3>
+                <p>Digital Experience / UI Design / Development</p>
+              </article>
+
+              <article class="work-item">
+                <span>03</span>
+                <h3>Project Gamma</h3>
+                <p>Brand Identity / Art Direction / Web Design</p>
+              </article>
+
+              <article class="work-item">
+                <span>04</span>
+                <h3>Project Delta</h3>
+                <p>Creative Direction / Digital Product</p>
+              </article>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section class="section about-home">
+        <div class="container">
+          <div class="row">
+            <p>05 — About</p>
+
+            <h2>Design is not decoration. It is positioning.</h2>
+
+            <p>
+              I combine creative direction, UI/UX thinking, development, and
+              brand strategy to help businesses communicate value before they
+              ever say a word.
+            </p>
+
+            <p>
+              From the first visual impression to the smallest interaction, the
+              goal is simple: make the business feel better than the
+              competition.
+            </p>
+          </div>
+        </div>
+      </section>
+      <section class="section cta-home">
+        <div class="container">
+          <div class="row">
+            <p>06 — Start a Project</p>
+
+            <h2>Have something worth building?</h2>
+
+            <p>
+              Let's create a digital experience that makes your business
+              impossible to overlook.
+            </p>
+
+            <a href="/contact">Let's Talk</a>
+          </div>
+        </div>
+      </section>
+      <footer class="section main-footer">
+        <div class="container">
+          <div class="row">
+            <p>Vitalis Mulwa</p>
+
+            <p>Creative Consultant & Digital Designer</p>
+
+            <p>© 2026 — All Rights Reserved</p>
+          </div>
+        </div>
+      </footer>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
+
+

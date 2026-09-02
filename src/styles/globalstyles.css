@@ -1,32 +1,17 @@
-html.is-refreshing [data-barba="container"] {
-  visibility: hidden;
-}
-
 /*---------------- Fonts ----------------*/
 @font-face {
-  font-family: "Inter";
-  src:
-    url("..//assets/fonts/inter-tight-cyrillic-300-normal.woff2")
-      format("woff2"),
-    url("../assets/fonts/inter-tight-cyrillic-300-normal.ttf") format("ttf");
+  font-family: "Vitalis Regular";
+  src: url("../assets/fonts/inter-tight-cyrillic-300-normal.ttf")
+    format("truetype");
+  font-weight: 300;
   font-style: normal;
   font-display: swap;
 }
+
 @font-face {
-  font-family: "Druk-Bold-Trial";
-  src:
-    url("..//assets/fonts/Druk-Bold-Trial.woff2") format("woff2"),
-    url("..//assets/fonts/Druk-Bold-Trial.ttf") format("ttf");
-  font-weight: 600;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "Grand Mighty";
-  src:
-    url("..//assets/fonts/Grand\ Mighty.woff2") format("woff2"),
-    url("..//assets/fonts/Grand\ Mighty.ttf") format("ttf");
-  font-weight: 600;
+  font-family: "Vitalis Bold";
+  src: url("../assets/fonts/Druk-Bold-Trial.ttf") format("truetype");
+  font-weight: 700;
   font-style: normal;
   font-display: swap;
 }
@@ -35,9 +20,7 @@ html.is-refreshing [data-barba="container"] {
 :root {
   --color-dark: #050505;
   --color-gray: #1c1d20;
-  --color-white: #ede8e5;
-  --color-blue: #004fff;
-  --color-red: #f04a00;
+  --color-white: #f9f9f9;
   --color-orange: #ffe100;
   --color-darkgreen: #008a49;
   --color-darkred: #bd2018;
@@ -55,11 +38,10 @@ html.is-refreshing [data-barba="container"] {
 
 /*---------------- Sizes ----------------*/
 :root {
-  --section-padding: var(--space-size);
-  --container-padding: calc(var(--space-size) * 1.55);
+  --section-padding: calc(var(--space-size) * 1);
+  --container-padding: calc(var(--gap-padding) * 1);
 
   --gap-padding: clamp(1em, 0.4286em + 2.8571vw, 3em);
-
   --space-size: clamp(3em, 1.81311em + 1.9144vw, 4em);
 
   --border-radius: calc(var(--space-size) * 1);
@@ -67,18 +49,12 @@ html.is-refreshing [data-barba="container"] {
 @media screen and (max-width: 720px) {
   :root {
     --section-padding: 12vh;
-    --container-padding: calc(
-      calc(var(--gap-padding) * 0.5) + calc(var(--gap-padding) * 0.5)
-    );
   }
 }
 @media screen and (max-width: 540px) {
   :root {
-    --section-padding: max(2em, 8vh);
-    --container-padding: 5vw;
-    --container-padding-small: 5vw;
-    --container-padding-offset: 0vw;
-    --col-gap: clamp(1.25em, 4vw, 2.5em);
+    --section-padding: max(1.6em, 6vh);
+    --container-padding: 4.5vw;
   }
 }
 
@@ -117,6 +93,14 @@ html {
 html,
 body {
   height: 100%;
+  background-color: var(--color-dark);
+}
+
+html,
+body {
+  width: 100%;
+  -webkit-font-smoothing: antialiased;
+  position: relative;
   background-color: var(--color-dark);
 }
 
@@ -186,6 +170,11 @@ figure {
 }
 
 /*---------------- Typography ----------------*/
+:root {
+  --font-regular: "Vitalis Regular", sans-serif;
+  --font-bold: "Vitalis Bold", sans-serif;
+}
+
 h1,
 h2,
 h3,
@@ -210,28 +199,28 @@ figcaption {
 
 h1,
 h2 {
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-regular);
   font-size: calc(var(--space-size) * 1);
   font-weight: 700;
   text-transform: none;
 }
 
 h3 {
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-regular);
   font-size: calc(var(--space-size) * 0.56);
   color: var(--color-white);
   text-transform: none;
 }
 
 h4 {
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-regular);
   font-weight: 600;
   font-size: calc(var(--space-size) * 0.32);
   color: var(--color-white);
 }
 
 h5 {
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-regular);
   font-size: calc(var(--space-size) * 0.24);
   font-weight: 600;
   font-style: normal;
@@ -242,7 +231,7 @@ h5 {
 }
 
 p {
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-regular);
   font-weight: 400;
   font-style: normal;
   font-size: 0.96em;
@@ -299,5 +288,3 @@ a {
   padding-left: var(--container-padding);
   padding-right: var(--container-padding);
 }
-
-/* ../../navigation/Hamburger */

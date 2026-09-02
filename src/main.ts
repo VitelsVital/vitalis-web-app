@@ -4,278 +4,84 @@ import "./styles/styles.css";
 import "./styles/components.css";
 
 import Navigation from "./components/navigation/Navigation";
-import LoadingScreen from "./components/loading/LoadingScreen";
+import TransitionManager from "./components/transitions/TransitionManager";
 
-import PageTransition from "./components/transitions/page/PageTransition";
-
-import { initBarba } from "./barba";
+import initBarba from "./barba";
 import { initLenis } from "./lenis";
-
-/*
-|--------------------------------------------------------------------------
-| Browser Scroll Restoration
-|--------------------------------------------------------------------------
-|
-| Prevent the browser from restoring the previous scroll position
-| when refreshing or using Back / Forward navigation.
-|
-*/
-
-if ("scrollRestoration" in history) {
-  history.scrollRestoration = "manual";
-}
-
-/*
-|--------------------------------------------------------------------------
-| Initial Scroll Position
-|--------------------------------------------------------------------------
-|
-| Always start the application from the top.
-|
-*/
-
-window.scrollTo(0, 0);
-
-/*
-|--------------------------------------------------------------------------
-| Lenis
-|--------------------------------------------------------------------------
-|
-| Initialize Lenis once for the entire application.
-|
-*/
-
-const lenis = initLenis();
-
-/*
-|--------------------------------------------------------------------------
-| Stop Lenis During Loading
-|--------------------------------------------------------------------------
-|
-| The loading screen owns the viewport until the initial
-| loading and page transition sequence has completed.
-|
-*/
-
-lenis.stop();
-
-/*
-|--------------------------------------------------------------------------
-| Navigation
-|--------------------------------------------------------------------------
-*/
-
-const navigation = new Navigation();
-
-document.body.prepend(navigation.render());
-
-/*
-|--------------------------------------------------------------------------
-| Barba Container
-|--------------------------------------------------------------------------
-*/
-
-const app = document.querySelector<HTMLElement>('[data-barba="container"]');
-
-if (!app) {
-  throw new Error('[data-barba="container"] element not found.');
-}
-
-/*
-|--------------------------------------------------------------------------
-| Loading Screen
-|--------------------------------------------------------------------------
-*/
-
-const loading = new LoadingScreen();
-
-document.body.append(loading.render());
-
-/*
-|--------------------------------------------------------------------------
-| Page Transition
-|--------------------------------------------------------------------------
-|
-| One PageTransition instance is shared between:
-|
-| - Initial loading
-| - Barba navigation
-| - Back / Forward navigation
-| - Refresh transitions
-|
-*/
-
-const pageTransition = new PageTransition();
-
-/*
-|--------------------------------------------------------------------------
-| Initialize Barba
-|--------------------------------------------------------------------------
-|
-| Barba is initialized before the loading sequence finishes.
-|
-*/
-
-initBarba(lenis, pageTransition);
-
-/*
-|--------------------------------------------------------------------------
-| Application Bootstrap
-|--------------------------------------------------------------------------
-*/
 
 const startApplication = async (): Promise<void> => {
   /*
   |--------------------------------------------------------------------------
-  | 1. Loading
+  | Lenis
   |--------------------------------------------------------------------------
-  |
-  | The loading screen animates:
-  |
-  | - Top progress line
-  | - VITALIS MULWA reveal
-  | - Percentage counter
-  |
-  | play() resolves exactly at 100%.
-  |
   */
 
-  await loading.play();
+  initLenis();
 
   /*
   |--------------------------------------------------------------------------
-  | 2. Completion Pause
+  | Transition Manager
   |--------------------------------------------------------------------------
-  |
-  | Give the user a brief moment to register:
-  |
-  | VITALIS MULWA
-  | 100%
-  |
   */
 
-  await new Promise<void>((resolve) => {
-    window.setTimeout(resolve, 380);
-  });
+  const transitionManager = new TransitionManager();
 
   /*
   |--------------------------------------------------------------------------
-  | 3. Loader → Page Transition Handoff
+  | Navigation
   |--------------------------------------------------------------------------
-  |
-  | The loader content gets a 50ms head start.
-  |
-  | 0ms:
-  |   VITALIS MULWA + 100 start moving upward.
-  |
-  | 50ms:
-  |   PageTransition starts.
-  |
-  | The progress line remains stationary.
-  |
   */
 
-  const loadingExit = loading.transitionOut();
+  const navigation = new Navigation(transitionManager);
+
+  const main = document.querySelector("main");
+
+  if (!main) {
+    throw new Error("[Main] <main> element was not found.");
+  }
+
+  document.body.insertBefore(navigation.render(), main);
 
   /*
   |--------------------------------------------------------------------------
-  | 4. 50ms Handoff Offset
+  | Barba
   |--------------------------------------------------------------------------
-  |
-  | This creates the slight visual overlap between the
-  | loading content leaving and PageTransition taking over.
-  |
   */
 
-  await new Promise<void>((resolve) => {
-    window.setTimeout(resolve, 0);
-  });
+  initBarba(transitionManager);
 
   /*
   |--------------------------------------------------------------------------
-  | 5. Start Page Transition
+  | Initial Page Boot
   |--------------------------------------------------------------------------
   |
-  | PageTransition now moves over the loading screen.
+  | EVERY page uses the LoadingScreen on initial document load.
+  |
+  | This includes:
+  |
+  | - Homepage
+  | - Work
+  | - About
+  | - Contact
+  | - Archive
+  |
+  | The purpose of this experiment is to establish one identical
+  | initial-entry sequence across the entire application.
   |
   */
 
-  const transition = pageTransition.play();
+  await transitionManager.playLoadingScreen();
 
   /*
   |--------------------------------------------------------------------------
-  | 6. Wait Until PageTransition Has Taken Over
+  | Exit Loading Screen
   |--------------------------------------------------------------------------
   |
-  | CONTENT_TIME determines when the transition has
-  | physically covered the loading screen.
-  |
-  */
-
-  await transition.contentReady;
-
-  /*
-  |--------------------------------------------------------------------------
-  | 7. Remove Loading Screen
-  |--------------------------------------------------------------------------
-  |
-  | The transition is now covering the loader.
-  |
-  | Removing it here cannot expose the page underneath.
+  | LoadingScreen.exit() starts the shared TransitionLayer curtains.
   |
   */
 
-  loading.remove();
-
-  /*
-  |--------------------------------------------------------------------------
-  | 8. Wait For Loader Exit
-  |--------------------------------------------------------------------------
-  |
-  | Normally this will already be complete, but awaiting it
-  | guarantees the handoff animation has finished.
-  |
-  */
-
-  await loadingExit;
-
-  /*
-  |--------------------------------------------------------------------------
-  | 9. Wait For Page Transition To Finish
-  |--------------------------------------------------------------------------
-  */
-
-  await transition.finished;
-
-  /*
-  |--------------------------------------------------------------------------
-  | 10. Reset Scroll
-  |--------------------------------------------------------------------------
-  |
-  | Make absolutely sure the first visible page starts
-  | at the top.
-  |
-  */
-
-  window.scrollTo(0, 0);
-
-  lenis.scrollTo(0, {
-    immediate: true,
-  });
-
-  /*
-  |--------------------------------------------------------------------------
-  | 11. Start Lenis
-  |--------------------------------------------------------------------------
-  */
-
-  lenis.start();
+  await transitionManager.exitLoadingScreen();
 };
-
-/*
-|--------------------------------------------------------------------------
-| Start Application
-|--------------------------------------------------------------------------
-*/
 
 startApplication();

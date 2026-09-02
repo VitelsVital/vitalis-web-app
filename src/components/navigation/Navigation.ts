@@ -1,53 +1,79 @@
 import MainNavigation from "./MainNavigation";
-
 import MobileNavigation from "./MobileNavigation";
-
-import FloatingHamburger from "./FloatingHamburger";
-
+// import FloatingHamburger from "./FloatingHamburger";
 import MobileMenu from "./MobileMenu";
 
-import MenuController from "../transitions/menu/MenuController";
+import TransitionManager from "../transitions/TransitionManager";
 
 class Navigation {
+  /*
+  |--------------------------------------------------------------------------
+  | Navigation Components
+  |--------------------------------------------------------------------------
+  */
+
   private mainNavigation: MainNavigation;
 
   private mobileNavigation: MobileNavigation;
 
-  private floatingHamburger: FloatingHamburger;
+  // private floatingHamburger: FloatingHamburger;
 
   private mobileMenu: MobileMenu;
 
-  private menuController: MenuController;
+  /*
+  |--------------------------------------------------------------------------
+  | Transition Manager
+  |--------------------------------------------------------------------------
+  |
+  | The Navigation does not own MenuTransition.
+  |
+  | TransitionManager is responsible for:
+  |
+  | - PageTransition
+  | - MenuTransition
+  | - LoadingScreen
+  | - Menu state
+  |
+  */
 
-  constructor() {
-    /*
-        |--------------------------------------------------------------------------
-        | Navigation
-        |--------------------------------------------------------------------------
-        */
+  private transitionManager: TransitionManager;
 
+  /*
+  |--------------------------------------------------------------------------
+  | Constructor
+  |--------------------------------------------------------------------------
+  */
+
+  constructor(transitionManager: TransitionManager) {
     this.mainNavigation = new MainNavigation();
 
     this.mobileNavigation = new MobileNavigation();
 
-    this.floatingHamburger = new FloatingHamburger();
+    // this.floatingHamburger = new FloatingHamburger();
 
     this.mobileMenu = new MobileMenu();
 
-    /*
-        |--------------------------------------------------------------------------
-        | Menu controller
-        |--------------------------------------------------------------------------
-        */
-
-    this.menuController = new MenuController();
+    this.transitionManager = transitionManager;
   }
 
   /*
-    |--------------------------------------------------------------------------
-    | Render
-    |--------------------------------------------------------------------------
-    */
+  |--------------------------------------------------------------------------
+  | Render
+  |--------------------------------------------------------------------------
+  |
+  | Creates:
+  |
+  | <nav class="navigation">
+  |   MainNavigation
+  |   MobileNavigation
+  |   FloatingHamburger
+  |   MobileMenu
+  | </nav>
+  |
+  | The caller is responsible for placing this navigation
+  | between the loading container and the Barba container.
+  |
+  */
 
   render(): HTMLElement {
     const navigation = document.createElement("nav");
@@ -55,85 +81,257 @@ class Navigation {
     navigation.className = "navigation";
 
     /*
-        |--------------------------------------------------------------------------
-        | Main navigation
-        |--------------------------------------------------------------------------
-        */
+    |--------------------------------------------------------------------------
+    | Main Navigation
+    |--------------------------------------------------------------------------
+    */
 
     navigation.appendChild(this.mainNavigation.render());
 
     /*
-        |--------------------------------------------------------------------------
-        | Mobile navigation
-        |--------------------------------------------------------------------------
-        */
+    |--------------------------------------------------------------------------
+    | Mobile Navigation
+    |--------------------------------------------------------------------------
+    */
 
     navigation.appendChild(this.mobileNavigation.render());
 
     /*
-        |--------------------------------------------------------------------------
-        | Floating hamburger
-        |--------------------------------------------------------------------------
-        */
+    |--------------------------------------------------------------------------
+    | Floating Hamburger
+    |--------------------------------------------------------------------------
+    */
 
-    navigation.appendChild(this.floatingHamburger.render());
+    // navigation.appendChild(this.floatingHamburger.render());
 
     /*
-        |--------------------------------------------------------------------------
-        | Mobile menu
-        |--------------------------------------------------------------------------
-        */
+    |--------------------------------------------------------------------------
+    | Mobile Menu
+    |--------------------------------------------------------------------------
+    */
 
     navigation.appendChild(this.mobileMenu.render());
 
     /*
-        |--------------------------------------------------------------------------
-        | Connect mobile menu
-        |--------------------------------------------------------------------------
-        */
+    |--------------------------------------------------------------------------
+    | Initial Menu State
+    |--------------------------------------------------------------------------
+    */
 
-    this.menuController.attachMobileMenu(this.mobileMenu);
+    this.mobileMenu.setVisible(false);
 
     /*
-        |--------------------------------------------------------------------------
-        | Connect mobile hamburger
-        |--------------------------------------------------------------------------
-        */
+    |--------------------------------------------------------------------------
+    | Mobile Hamburger
+    |--------------------------------------------------------------------------
+    */
 
     const mobileHamburger = this.mobileNavigation.getHamburger();
 
     if (mobileHamburger) {
-      this.menuController.attachMobileHamburger(mobileHamburger);
+      mobileHamburger.onToggleChange(() => {
+        this.handleHamburgerToggle(mobileHamburger);
+      });
     }
 
     /*
-        |--------------------------------------------------------------------------
-        | Connect floating hamburger
-        |--------------------------------------------------------------------------
-        */
+    |--------------------------------------------------------------------------
+    | Floating Hamburger
+    |--------------------------------------------------------------------------
+    |
+    | Uses the exact same menu transition system.
+    |
+    */
 
-    const floatingHamburger = this.floatingHamburger.getHamburger();
+    // const floatingHamburger = this.floatingHamburger.getHamburger();
 
-    if (floatingHamburger) {
-      this.menuController.attachFloatingHamburger(floatingHamburger);
-    }
+    // if (floatingHamburger) {
+    //   floatingHamburger.onToggleChange(() => {
+    //     this.handleHamburgerToggle(floatingHamburger);
+    //   });
+    // }
 
     /*
-        |--------------------------------------------------------------------------
-        | Active navigation links
-        |--------------------------------------------------------------------------
-        */
+    |--------------------------------------------------------------------------
+    | Active Navigation Links
+    |--------------------------------------------------------------------------
+    */
 
     this.updateActiveLinks();
+
+    /*
+    |--------------------------------------------------------------------------
+    | Return Navigation
+    |--------------------------------------------------------------------------
+    */
 
     return navigation;
   }
 
   /*
+  |--------------------------------------------------------------------------
+  | Hamburger Toggle
+  |--------------------------------------------------------------------------
+  */
+
+  private handleHamburgerToggle(
+    source: ReturnType<MobileNavigation["getHamburger"]>,
+  ): void {
+    if (!source) {
+      return;
+    }
+
+    /*
     |--------------------------------------------------------------------------
-    | Active links
+    | Requested State
+    |--------------------------------------------------------------------------
+    |
+    | Hamburger has already updated its visual state.
+    |
+    */
+
+    const requestedOpen = source.isOpen();
+
+    /*
+    |--------------------------------------------------------------------------
+    | Current Menu State
     |--------------------------------------------------------------------------
     */
+
+    const state = this.transitionManager.getMenuState();
+
+    /*
+    |--------------------------------------------------------------------------
+    | Prevent Interaction During Transition
+    |--------------------------------------------------------------------------
+    */
+
+    // if (state === "opening" || state === "closing") {
+    //   this.syncHamburgers(state === "opening");
+
+    //   return;
+    // }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Open
+    |--------------------------------------------------------------------------
+    */
+
+    if (requestedOpen) {
+      void this.openMenu();
+
+      return;
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Close
+    |--------------------------------------------------------------------------
+    */
+
+    void this.closeMenu();
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Open Menu
+  |--------------------------------------------------------------------------
+  |
+  | Sequence:
+  |
+  | Hamburger → X
+  |        ↓
+  | MenuTransition.open()
+  |        ↓
+  | Menu becomes visible
+  |        ↓
+  | Transition finishes
+  |
+  */
+
+  private async openMenu(): Promise<void> {
+    /*
+    |--------------------------------------------------------------------------
+    | Synchronize Both Hamburgers
+    |--------------------------------------------------------------------------
+    */
+
+    // this.syncHamburgers(true);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Run Menu Transition
+    |--------------------------------------------------------------------------
+    */
+
+    await this.transitionManager.openMenu(() => {
+      this.mobileMenu.setVisible(true);
+    });
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Close Menu
+  |--------------------------------------------------------------------------
+  |
+  | Normal close:
+  |
+  | Hamburger → normal
+  |        ↓
+  | MenuTransition.close()
+  |        ↓
+  | Menu becomes hidden
+  |        ↓
+  | Transition finishes
+  |
+  | When a navigation link is clicked while the menu is open,
+  | the larger navigation/page-transition orchestration can
+  | take over.
+  |
+  */
+
+  private async closeMenu(): Promise<void> {
+    /*
+    |--------------------------------------------------------------------------
+    | Synchronize Both Hamburgers
+    |--------------------------------------------------------------------------
+    */
+
+    // this.syncHamburgers(false);
+
+    /*
+    |--------------------------------------------------------------------------
+    | Run Menu Transition
+    |--------------------------------------------------------------------------
+    */
+
+    await this.transitionManager.closeMenu(() => {
+      this.mobileMenu.setVisible(false);
+    });
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Synchronize Hamburgers
+  |--------------------------------------------------------------------------
+  |
+  | Mobile and floating hamburger always represent
+  | the same menu state.
+  |
+  */
+
+  // private syncHamburgers(open: boolean): void {
+  //   this.mobileNavigation.getHamburger()?.setOpen(open);
+
+  //   this.floatingHamburger.getHamburger()?.setOpen(open);
+  // }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Active Navigation Links
+  |--------------------------------------------------------------------------
+  */
 
   private updateActiveLinks(): void {
     const currentPath = window.location.pathname.replace(/\/+$/, "") || "/";
@@ -155,43 +353,37 @@ class Navigation {
   }
 
   /*
-    |--------------------------------------------------------------------------
-    | Destroy
-    |--------------------------------------------------------------------------
-    */
+  |--------------------------------------------------------------------------
+  | Destroy
+  |--------------------------------------------------------------------------
+  */
 
   destroy(): void {
-    this.menuController.destroy();
-
     this.mainNavigation.destroy();
 
     this.mobileNavigation.destroy();
 
-    this.floatingHamburger.destroy();
+    // this.floatingHamburger.destroy();
 
     this.mobileMenu.destroy();
   }
 
   /*
-    |--------------------------------------------------------------------------
-    | Getters
-    |--------------------------------------------------------------------------
-    */
+  |--------------------------------------------------------------------------
+  | Getters
+  |--------------------------------------------------------------------------
+  */
 
   getMobileNavigation(): MobileNavigation {
     return this.mobileNavigation;
   }
 
-  getFloatingHamburger(): FloatingHamburger {
-    return this.floatingHamburger;
-  }
+  // getFloatingHamburger(): FloatingHamburger {
+  //   return this.floatingHamburger;
+  // }
 
   getMobileMenu(): MobileMenu {
     return this.mobileMenu;
-  }
-
-  getMenuController(): MenuController {
-    return this.menuController;
   }
 }
 

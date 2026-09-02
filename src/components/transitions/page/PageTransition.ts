@@ -1,175 +1,115 @@
 import gsap from "gsap";
 
+import TransitionLayer from "../TransitionLayer";
+
+export type PageTransitionMode = "navigation" | "reload";
+
 class PageTransition {
-  private container: HTMLDivElement;
+  /*
+  |--------------------------------------------------------------------------
+  | Shared Transition Layer
+  |--------------------------------------------------------------------------
+  */
 
-  private screenOne: HTMLDivElement;
-
-  private screenTwo: HTMLDivElement;
+  private readonly layer: TransitionLayer;
 
   /*
   |--------------------------------------------------------------------------
-  | Content paint timing
+  | Normal Navigation Timing
   |--------------------------------------------------------------------------
-  |
-  | Time in milliseconds after the transition starts
-  | at which the new page may be displayed.
-  |
   */
 
-  private readonly CONTENT_TIME = 400;
+  private readonly SCREEN_TWO_DURATION = 1.2;
 
-  constructor() {
-    this.container = document.createElement("div");
+  private readonly SCREEN_ONE_DURATION = 1.08;
 
-    this.container.className = "transition-container";
-
-    /*
-    |--------------------------------------------------------------------------
-    | Screen One
-    |--------------------------------------------------------------------------
-    */
-
-    this.screenOne = document.createElement("div");
-
-    this.screenOne.className = "transition-screen-one";
-
-    this.screenOne.innerHTML = `
-      <div class="fixed-background primary">
-        <div class="texture"></div>
-      </div>
-    `;
-
-    /*
-    |--------------------------------------------------------------------------
-    | Screen Two
-    |--------------------------------------------------------------------------
-    */
-
-    this.screenTwo = document.createElement("div");
-
-    this.screenTwo.className = "transition-screen-two";
-
-    this.screenTwo.innerHTML = `
-      <div class="fixed-background secondary">
-        <div class="texture"></div>
-      </div>
-    `;
-
-    /*
-    |--------------------------------------------------------------------------
-    | DOM
-    |--------------------------------------------------------------------------
-    */
-
-    this.container.appendChild(this.screenOne);
-
-    this.container.appendChild(this.screenTwo);
-
-    document.body.appendChild(this.container);
-
-    /*
-    |--------------------------------------------------------------------------
-    | Initial state
-    |--------------------------------------------------------------------------
-    */
-
-    this.reset();
-  }
+  private readonly SCREEN_ONE_DELAY = 0.15;
 
   /*
   |--------------------------------------------------------------------------
-  | Reset
+  | Reload Timing
   |--------------------------------------------------------------------------
   |
-  | Returns the transition to its completely
-  | hidden idle state.
+  | Reload uses a different choreography.
   |
-  | IMPORTANT:
+  | Screen One:
   |
-  | The container is hidden FIRST.
-  | The screens are then immediately returned
-  | to their starting position while invisible.
+  |   immediately covers the viewport.
+  |
+  | Screen Two:
+  |
+  |   starts below the viewport
+  |   ↓
+  |   moves into full coverage
+  |   ↓
+  |   takes over from Screen One
+  |   ↓
+  |   continues upward
   |
   */
 
-  reset(): void {
-    /*
-    |--------------------------------------------------------------------------
-    | Kill running screen animations
-    |--------------------------------------------------------------------------
-    */
+  private readonly RELOAD_COVER_DURATION = 0.35;
 
-    gsap.killTweensOf([this.screenOne, this.screenTwo]);
+  private readonly RELOAD_WIPE_DURATION = 1.2;
 
-    /*
-    |--------------------------------------------------------------------------
-    | Hide container FIRST
-    |--------------------------------------------------------------------------
-    */
+  /*
+  |--------------------------------------------------------------------------
+  | Constructor
+  |--------------------------------------------------------------------------
+  */
 
-    gsap.set(this.container, {
-      display: "none",
-    });
-
-    /*
-    |--------------------------------------------------------------------------
-    | Reset screens
-    |--------------------------------------------------------------------------
-    */
-
-    gsap.set(this.screenOne, {
-      yPercent: 5,
-    });
-
-    gsap.set(this.screenTwo, {
-      yPercent: 5,
-    });
+  constructor(layer: TransitionLayer) {
+    this.layer = layer;
   }
 
   /*
   |--------------------------------------------------------------------------
   | Play
   |--------------------------------------------------------------------------
-  |
-  | Starts a fresh transition from the reset state.
-  |
   */
 
-  play(): {
+  play(mode: PageTransitionMode = "navigation"): {
     contentReady: Promise<void>;
     finished: Promise<void>;
   } {
     /*
     |--------------------------------------------------------------------------
-    | Make sure any previous transition is stopped
+    | Reset
     |--------------------------------------------------------------------------
     */
 
-    gsap.killTweensOf([this.screenOne, this.screenTwo]);
+    this.layer.reset();
 
     /*
     |--------------------------------------------------------------------------
-    | Show container
+    | Screens
     |--------------------------------------------------------------------------
     */
 
-    gsap.set(this.container, {
-      display: "block",
-    });
+    const screenOne = this.layer.getScreenOne();
+
+    const screenTwo = this.layer.getScreenTwo();
 
     /*
     |--------------------------------------------------------------------------
-    | Explicit starting positions
+    | Show
     |--------------------------------------------------------------------------
     */
 
-    gsap.set(this.screenOne, {
-      yPercent: 5,
+    this.layer.show();
+
+    /*
+    |--------------------------------------------------------------------------
+    | Layering
+    |--------------------------------------------------------------------------
+    */
+
+    gsap.set(screenOne, {
+      zIndex: 1,
     });
 
-    gsap.set(this.screenTwo, {
-      yPercent: 5,
+    gsap.set(screenTwo, {
+      zIndex: 2,
     });
 
     /*
@@ -192,61 +132,76 @@ class PageTransition {
 
     /*
     |--------------------------------------------------------------------------
-    | Content release
+    | Reload Mode
     |--------------------------------------------------------------------------
-    |
-    | The new Barba container is allowed to appear
-    | at CONTENT_TIME.
-    |
     */
 
-    gsap.delayedCall(this.CONTENT_TIME / 1000, () => {
-      contentResolve?.();
-    });
+    if (mode === "reload") {
+      return this.playReload(
+        screenOne,
+        screenTwo,
+        contentResolve,
+        finishedResolve,
+        contentReady,
+        finished,
+      );
+    }
 
     /*
     |--------------------------------------------------------------------------
-    | Transition timeline
+    | Normal Navigation Mode
+    |--------------------------------------------------------------------------
+    */
+
+    return this.playNavigation(
+      screenOne,
+      screenTwo,
+      contentResolve,
+      finishedResolve,
+      contentReady,
+      finished,
+    );
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | NORMAL NAVIGATION
+  |--------------------------------------------------------------------------
+  |
+  | This is the existing working Barba choreography.
+  |
+  */
+
+  private playNavigation(
+    screenOne: HTMLDivElement,
+    screenTwo: HTMLDivElement,
+    contentResolve: (() => void) | null,
+    finishedResolve: (() => void) | null,
+    contentReady: Promise<void>,
+    finished: Promise<void>,
+  ): {
+    contentReady: Promise<void>;
+    finished: Promise<void>;
+  } {
+    /*
+    |--------------------------------------------------------------------------
+    | Content Handoff State
+    |--------------------------------------------------------------------------
+    */
+
+    let contentReleased = false;
+
+    /*
+    |--------------------------------------------------------------------------
+    | Timeline
     |--------------------------------------------------------------------------
     */
 
     const timeline = gsap.timeline({
       onComplete: () => {
-        /*
-          |--------------------------------------------------------------------------
-          | Transition animation is completely finished.
-          |--------------------------------------------------------------------------
-          |
-          | FIRST:
-          | Hide the transition container.
-          |
-          | SECOND:
-          | Immediately reset both screens back to
-          | their starting position.
-          |
-          | Because the container is already hidden,
-          | the reset can never visually flash.
-          |
-          */
+        this.layer.reset();
 
-        gsap.set(this.container, {
-          display: "none",
-        });
-
-        gsap.set(this.screenOne, {
-          yPercent: 5,
-        });
-
-        gsap.set(this.screenTwo, {
-          yPercent: 5,
-        });
-
-        /*
-          |--------------------------------------------------------------------------
-          | Tell Barba that the visual transition
-          | has completely finished.
-          |--------------------------------------------------------------------------
-          */
+        this.layer.hide();
 
         finishedResolve?.();
       },
@@ -254,52 +209,251 @@ class PageTransition {
 
     /*
     |--------------------------------------------------------------------------
-    | Screen Two
+    | SCREEN TWO
     |--------------------------------------------------------------------------
     |
-    | Screen Two starts first.
+    | +5% → -200%
     |
     */
 
     timeline.to(
-      this.screenTwo,
+      screenTwo,
       {
         yPercent: -200,
-        duration: 1.0,
-        ease: "power3.Out",
+        duration: this.SCREEN_TWO_DURATION,
+        ease: "power3.out",
+
+        onUpdate: () => {
+          if (contentReleased) {
+            return;
+          }
+
+          const yPercent = Number(gsap.getProperty(screenTwo, "yPercent"));
+
+          /*
+          |--------------------------------------------------------------------------
+          | Current Page Completely Covered
+          |--------------------------------------------------------------------------
+          */
+
+          if (yPercent <= -100) {
+            contentReleased = true;
+
+            contentResolve?.();
+          }
+        },
       },
       0,
     );
 
     /*
     |--------------------------------------------------------------------------
-    | Screen One
+    | SCREEN ONE
     |--------------------------------------------------------------------------
     |
-    | Screen One follows 150ms later.
+    | +5% → -200%
     |
     */
 
     timeline.to(
-      this.screenOne,
+      screenOne,
       {
         yPercent: -200,
-        duration: 0.9,
-        ease: "power3.Out",
+        duration: this.SCREEN_ONE_DURATION,
+        ease: "power3.out",
       },
-      0.15,
+      this.SCREEN_ONE_DELAY,
     );
-
-    /*
-    |--------------------------------------------------------------------------
-    | Return transition state
-    |--------------------------------------------------------------------------
-    */
 
     return {
       contentReady,
       finished,
     };
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | RELOAD MODE
+  |--------------------------------------------------------------------------
+  |
+  | Visual sequence:
+  |
+  |   Current page
+  |       ↓
+  |   Screen One immediately covers viewport
+  |       ↓
+  |   Screen Two starts below viewport
+  |       ↓
+  |   Screen Two moves upward
+  |       ↓
+  |   Screen Two completely covers Screen One
+  |       ↓
+  |   Screen One is removed from the visual stack
+  |       ↓
+  |   Screen Two continues upward
+  |       ↓
+  |   Current page revealed
+  |
+  */
+
+  private playReload(
+    screenOne: HTMLDivElement,
+    screenTwo: HTMLDivElement,
+    contentResolve: (() => void) | null,
+    finishedResolve: (() => void) | null,
+    contentReady: Promise<void>,
+    finished: Promise<void>,
+  ): {
+    contentReady: Promise<void>;
+    finished: Promise<void>;
+  } {
+    /*
+    |--------------------------------------------------------------------------
+    | CRITICAL INITIAL STATE
+    |--------------------------------------------------------------------------
+    |
+    | Screen One immediately covers the entire viewport.
+    |
+    | This is the reload safety cover.
+    |
+    */
+
+    gsap.set(screenOne, {
+      yPercent: 0,
+      zIndex: 1,
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Screen Two
+    |--------------------------------------------------------------------------
+    |
+    | Start completely below the viewport.
+    |
+    */
+
+    gsap.set(screenTwo, {
+      yPercent: 100,
+      zIndex: 2,
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Content Is Already Covered
+    |--------------------------------------------------------------------------
+    |
+    | There is no Barba container swap during a reload.
+    |
+    | The current page remains underneath.
+    |
+    */
+
+    contentResolve?.();
+
+    /*
+    |--------------------------------------------------------------------------
+    | Reload Timeline
+    |--------------------------------------------------------------------------
+    */
+
+    const timeline = gsap.timeline({
+      onComplete: () => {
+        /*
+        |--------------------------------------------------------------------------
+        | Final Cleanup
+        |--------------------------------------------------------------------------
+        */
+
+        this.layer.reset();
+
+        this.layer.hide();
+
+        finishedResolve?.();
+      },
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | STEP 1 — SCREEN TWO TAKES OVER
+    |--------------------------------------------------------------------------
+    |
+    | Screen Two:
+    |
+    |   100% → 0%
+    |
+    | It travels from the bottom until it completely covers
+    | Screen One.
+    |
+    */
+
+    timeline.to(
+      screenTwo,
+      {
+        yPercent: 0,
+        duration: this.RELOAD_COVER_DURATION,
+        ease: "power3.out",
+      },
+      0,
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | STEP 2 — SCREEN ONE DISAPPEARS
+    |--------------------------------------------------------------------------
+    |
+    | Screen Two now owns the entire viewport.
+    |
+    | Screen One can safely be hidden/reset.
+    |
+    */
+
+    timeline.call(
+      () => {
+        gsap.set(screenOne, {
+          yPercent: 5,
+        });
+      },
+      [],
+      `+=0`,
+    );
+
+    /*
+    |--------------------------------------------------------------------------
+    | STEP 3 — SCREEN TWO WIPES UPWARD
+    |--------------------------------------------------------------------------
+    |
+    | Screen Two:
+    |
+    |   0% → -200%
+    |
+    | The current page underneath is revealed.
+    |
+    */
+
+    timeline.to(
+      screenTwo,
+      {
+        yPercent: -200,
+        duration: this.RELOAD_WIPE_DURATION,
+        ease: "power3.out",
+      },
+      ">",
+    );
+
+    return {
+      contentReady,
+      finished,
+    };
+  }
+
+  /*
+  |--------------------------------------------------------------------------
+  | Destroy
+  |--------------------------------------------------------------------------
+  */
+
+  destroy(): void {
+    gsap.killTweensOf([this.layer.getScreenOne(), this.layer.getScreenTwo()]);
   }
 }
 

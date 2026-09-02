@@ -4,9 +4,6 @@ import Lenis from "lenis";
 |--------------------------------------------------------------------------
 | Lenis Instance
 |--------------------------------------------------------------------------
-|
-| A single Lenis instance is shared across the entire application.
-|
 */
 
 let lenis: Lenis | null = null;
@@ -23,12 +20,6 @@ export function initLenis(): Lenis {
   }
 
   lenis = new Lenis();
-
-  /*
-    |--------------------------------------------------------------------------
-    | Animation Frame
-    |--------------------------------------------------------------------------
-    */
 
   const raf = (time: number): void => {
     lenis?.raf(time);
